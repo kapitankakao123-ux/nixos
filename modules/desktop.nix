@@ -1,0 +1,44 @@
+# modules/desktop.nix — графическое рабочее место: niri + DankMaterialShell.
+# Системная часть (то, что нужно от root и до логина): композитор, greeter,
+# portals, звук, шрифты. Пользовательская часть — в home/common.nix.
+# Импортируется на kitjet и gadnix. На rpinix НЕ импортируется — там kiosk.
+{ config, pkgs, lib, ... }:
+
+{
+  # niri включается системно: ему нужны seat, сессия, portals, polkit.
+  # Опция ставит пакет, создаёт niri.desktop и настраивает окружение.
+  programs.niri.enable = true;
+
+  # Дисплей-менеджер. tuigreet — минималистичный, в TTY.
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
+      user = "greeter";
+    };
+  };
+
+  security.polkit.enable = true;
+  services.gnome.gnome-keyring.enable = true;   # хранилище паролей для приложений
+
+  # Раскладка для X11-приложений через XWayland.
+  services.xserver.xkb = {
+    layout = "us";
+    variant = "";
+  };
+
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  };
+
+  # Шрифты — системные, потому что нужны всем приложениям.
+  # material-symbols и inter обязательны для DankMaterialShell.
+  fonts.packages = with pkgs; [
+    inter
+    material-symbols
+    nerd-fonts.jetbrains-mono
+    noto-fonts
+    noto-fonts-color-emoji
+  ];
+}

@@ -1,16 +1,15 @@
 {
-  # description — просто человекочитаемая подпись, ни на что не влияет
-  description = "NixOS: niri + DankMaterialShell";
+  description = "Домашняя инфраструктура: NixOS на всех машинах";
 
   # ─────────────────────────────────────────────────────────────
-  # INPUTS — ОТКУДА берётся код. Это единственное место в системе,
-  # где указываются источники и их версии.
-  # Точные коммиты фиксируются в flake.lock (аналог package-lock.json).
+  # INPUTS — ОТКУДА берётся код. Единственное место, где указаны
+  # источники и их версии. Точные коммиты — в flake.lock.
   # ─────────────────────────────────────────────────────────────
   inputs = {
     # Основной репозиторий пакетов. nixos-26.05 — стабильная ветка.
-    # Хочешь rolling как в Arch — поменяй на "nixpkgs-unstable".
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    # Нужен для отдельных свежих пакетов (pkgs.unstable.*) и для rpinix.
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Home Manager — управление ~/ (дотфайлы, пользовательские пакеты).
     # Ветка ДОЛЖНА совпадать с веткой nixpkgs (26.05 ↔ release-26.05).
@@ -27,49 +26,60 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Пример, как добавляется что-то ещё (Zen Browser нет в nixpkgs):
-    # zen-browser = {
-    #   url = "github:0xc000022070/zen-browser-flake";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    # Zen Browser
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # ─────────────────────────────────────────────────────────────
   # OUTPUTS — ЧТО этот flake собирает.
-  # Аргументы функции = имена из inputs. @inputs — «весь набор целиком»,
-  # чтобы пробросить его в модули (используется ниже в specialArgs).
   # ─────────────────────────────────────────────────────────────
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+    let
+      # ── Хосты объявлены ОДИН раз ──────────────────────────────
+      # Добавить машину = дописать сюда строку и создать hosts/<имя>/.
+      # Отсюда генерируются nixosConfigurations (и позже — ноды colmena).
+      hosts = {
+        kitjet = {
+          system = "x86_64-linux";
+          home = ./home/kitjet.nix;   # null, если home-manager на хосте не нужен
+        };
+        # gadnix = { system = "x86_64-linux";  home = ./home/gadnix.nix; };
+        # rpinix = { system = "aarch64-linux"; home = null; };
+      };
 
-    # gadjetarch — имя конфигурации. Обязано совпадать с
-    # networking.hostName в configuration.nix (или указывай явно:
-    # nixos-rebuild switch --flake .#gadjetarch)
-    nixosConfigurations.kitjet = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
+      # Сборка одной системы из описания выше.
+      mkHost = name: cfg: nixpkgs.lib.nixosSystem {
+        inherit (cfg) system;
 
-      # Прокидываем inputs внутрь модулей, чтобы там был доступен
-      # inputs.dms и т.п. Без этого модули о flake ничего не знают.
-      specialArgs = { inherit inputs; };
+        # Прокидываем inputs внутрь модулей, чтобы там были доступны
+        # inputs.dms и т.п. Без этого модули о flake ничего не знают.
+        specialArgs = { inherit inputs; };
 
-      # modules — список кусков конфигурации. Они СЛИВАЮТСЯ в один
-      # большой атрибут-сет. Порядок не важен, важна только уникальность
-      # присваиваний одной и той же опции.
-      modules = [
-        ./configuration.nix
+        # modules — список кусков конфигурации, они СЛИВАЮТСЯ в один
+        # атрибут-сет. Порядок не важен, важна уникальность присваиваний.
+        modules = [
+          ./hosts/${name}
 
-        # Подключаем Home Manager как модуль NixOS: тогда ~/ пересобирается
-        # той же командой nixos-rebuild, отдельная команда не нужна.
-        home-manager.nixosModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
-          home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
-          home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
-          home-manager.extraSpecialArgs = { inherit inputs; };
+          # Home Manager как модуль NixOS: ~/ пересобирается той же
+          # командой nixos-rebuild, отдельная команда не нужна.
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
+            home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
+            home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
+            home-manager.extraSpecialArgs = { inherit inputs; };
+            home-manager.users.gadjet = cfg.home;
+          }
+        ];
+      };
+    in
+    {
+      nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;
 
-          # Ключ = имя пользователя из configuration.nix
-          home-manager.users.gadjet = import ./home.nix;
-        }
-      ];
+      # TODO: сюда же — ноды colmena из того же hosts, когда появится
+      # вторая машина. Пока деплоить нечего: nixos-rebuild локально.
     };
-  };
 }

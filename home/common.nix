@@ -1,13 +1,12 @@
-# home.nix — ПОЛЬЗОВАТЕЛЬ: ~/.config, дотфайлы, прикладные программы.
-# Ничего от root. Всё это можно сломать и починить, не трогая загрузку системы.
+# home/common.nix — ПОЛЬЗОВАТЕЛЬ: ~/.config, дотфайлы, прикладные программы.
+# Одинаково на всех десктопных машинах. Ничего от root:
+# это можно сломать и починить, не трогая загрузку системы.
 { config, pkgs, inputs, ... }:
 
 {
   imports = [
     # Модуль DMS: ставит quickshell, dgop, dms-cli и юниты systemd.
     inputs.dms.homeModules.dank-material-shell
-    # Модуль интеграции с niri: генерирует ~/.config/niri/dms/*.kdl
-    inputs.dms.homeModules.niri
   ];
 
   home.username = "gadjet";
@@ -29,30 +28,19 @@
     enableDynamicTheming = true;     # тема из обоев (matugen)
     enableAudioWavelength = true;
     enableCalendarEvents = true;
-
-    # Интеграция с niri: модуль кладёт свои куски конфига в
-    # ~/.config/niri/dms/{colors,layout,alttab,binds}.kdl
-    niri = {
-      enableKeybinds = true;    # биндов DMS (Mod+Space — лаунчер, Mod+V — буфер…)
-      enableSpawn = true;       # автозапуск `dms run` вместе с niri
-    };
   };
 
   # ── Конфиг niri ─────────────────────────────────────────────
-  # Пока пишешь его руками в ~/.config/niri/config.kdl.
-  # Обязательно добавь в начало файла:
+  # Намеренно НЕ под управлением home-manager: правится руками в
+  # ~/.config/niri/config.kdl, цикл правки — секунды вместо пересборки.
+  # В начале файла должно быть:
   #
   #   include "dms/colors.kdl"
   #   include "dms/layout.kdl"
   #   include "dms/alttab.kdl"
   #   include "dms/binds.kdl"
-  #
-  # Когда конфиг устаканится — положи его в репозиторий и раскомментируй:
-  # xdg.configFile."niri/config.kdl".source = ./niri/config.kdl;
-  # (после этого файл станет символической ссылкой в /nix/store, т.е.
-  #  read-only: правится только через пересборку)
 
-  # ── Пользовательские пакеты ─────────────────────────────────
+  # ── Пакеты, общие для всех десктопов ────────────────────────
   home.packages = with pkgs; [
     ghostty            # терминал
     telegram-desktop
@@ -61,8 +49,9 @@
     brightnessctl
     playerctl
     fastfetch
-    # winbox4          # MikroTik
-    # via              # прошивка/раскладка клавиатуры (GUI-часть)
+    obsidian                                         # unfree, allowUnfree уже включён
+    pkgs.unstable.claude-code                        # свежий, из unstable
+    inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   # Пример декларативной программы: home-manager сам генерирует конфиг
