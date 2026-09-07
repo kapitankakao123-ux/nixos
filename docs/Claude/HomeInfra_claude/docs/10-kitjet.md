@@ -1,13 +1,13 @@
 ---
 tags: [хост, kitjet]
 ---
-
+t
 # kitjet — кухонный сервер
 
 x86_64. Стоит на кухне, подключён к телевизору. NixOS установлен и работает: niri + DankMaterialShell + ghostty, плюс Obsidian, Zen и Claude Code для работы над этим проектом.
 
 ## Роли
-
+ 
 - гипервизор (libvirt/KVM)
 - файловое хранилище (ZFS + samba/nfs)
 - медиа на телевизор (Jellyfin, mpv)
@@ -29,11 +29,11 @@ x86_64. Стоит на кухне, подключён к телевизору. 
 
 Осталось руками:
 
-- [ ] `sudo nixos-rebuild switch --flake ~/nixos#kitjet` (нужен пароль, поэтому не выполнено)
-- [ ] Проверить после перезагрузки: греетер, niri, DMS
-- [ ] `git commit` — **после** успешной сборки
-- [ ] Вписать публичный ssh-ключ в `users.users.gadjet.openssh.authorizedKeys.keys` (`modules/common.nix`) и только потом ставить `PasswordAuthentication = false`. Сейчас пароли по ssh **включены**, как и было
-- [ ] `networking.hostId` пока закомментирован — заполнить вместе с включением ZFS
+- [x] `sudo nixos-rebuild switch --flake ~/nixos#kitjet` (нужен пароль, поэтому не выполнено)
+- [x] Проверить после перезагрузки: греетер, niri, DMS
+- [x] `git commit` — **после** успешной сборки
+- [x] Вписать публичный ssh-ключ в `users.users.gadjet.openssh.authorizedKeys.keys` (`modules/common.nix`) и только потом ставить `PasswordAuthentication = false`. Сейчас пароли по ssh **включены**, как и было (Пока без ключа, мы в локалке, во внешнюю сеть не попадаем, сделаем в конце)
+- [x] `networking.hostId = "ab1bac40"` — заполнен при включении ZFS, см. [[21-ZFS-хранилище]]
 
 Заметки по переезду:
 
@@ -43,14 +43,25 @@ x86_64. Стоит на кухне, подключён к телевизору. 
 
 ## Хранилище
 
-- [ ] Импортировать старый пул: `sudo zpool import -f tank`
-- [ ] Раскомментировать `boot.zfs.extraPools = [ "tank" ]` в `modules/storage.nix`
-- [ ] Проверить датасеты: `zfs list`
-- [ ] Задать пароль samba: `sudo smbpasswd -a gadjet`
-- [ ] Проверить доступ с другой машины
-- [ ] Убедиться, что `services.zfs.autoScrub` включён
+Пошаговый разбор с объяснениями — [[21-ZFS-хранилище]]. Здесь только статус.
 
-## Виртуализация
+Раскладка: `tank` = зеркало `sdb` + `sdc` (2 × 1 ТБ HDD). `nvme0n1` — ОС, `sda` (466 ГБ) свободен.
+
+- [x] Уточнить железо: три SATA HDD, а не NVMe. NVMe один, системный
+- [x] Решить раскладку: зеркало 2 × 1 ТБ, `sda` вне пула
+- [x] Сохранить 128 ГиБ со старой btrfs (`sdb`+`sdc` были одной ФС) в `/home/gadjet/_migration`
+- [x] `modules/storage.nix` дописан и импортирован в `hosts/kitjet`
+- [x] `networking.hostId = "ab1bac40"`
+- [x] Убрать `linuxPackages_latest` — ZFS с ним не собирается
+- [x] `nixos-rebuild switch` + перезагрузка (меняется ядро)
+- [x] `wipefs` на `sdb`/`sdc`, снести LVM `Gbackup` с `sda`
+- [x] `zpool create` зеркала по `/dev/disk/by-id/`
+- [x] Датасеты `media`, `files`, `git`, `archive`
+- [x] `sudo smbpasswd -a gadjet` и проверка шары с другой машины
+- [x] Вернуть данные из `_migration` в `/tank/files`, потом удалить staging
+- [ ] Решить, чем занять `sda`
+
+## Виртуализация (Откладывается до новых дисков, Скоро...)
 
 - [ ] Раскомментировать мост `br0` в `modules/virtualisation.nix`, подставить своё имя интерфейса (`ip link`)
 - [ ] Проверить, что юзер в группах `libvirtd` и `kvm`: `groups`

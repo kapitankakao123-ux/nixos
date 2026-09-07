@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01-Репозиторий.md",
+                "file": "docs/10-kitjet.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "01-Репозиторий"
+              "title": "10-kitjet"
             }
           }
         ]
@@ -209,21 +209,23 @@
   },
   "active": "e4d15a103435d899",
   "lastOpenFiles": [
+    "docs/11-rpinix.md",
+    "docs/21-ZFS-хранилище.md",
+    "docs/10-kitjet.md",
     "docs/00-Проект.md",
+    "docs/01-Репозиторий.md",
+    "docs/20-Бэкапы.md",
+    "docs/sedTyNW9r",
+    "sedKRm4r7",
     "docs/sed8csDLm",
     "docs/sedkULiC6",
-    "docs/01-Репозиторий.md",
     "CLAUDE.md.tmp.15440.731646913f95",
     "sedlRPtKy",
     "sedzGktnL",
     "docs/00-Проект.md.tmp.15440.bce04bde173d",
     "docs/00-Проект.md.tmp.15440.e59d5e320395",
     "docs/sedtzsQv0",
-    "docs/sedMNJkKb",
-    "docs/12-gadnix.md.tmp.15440.051dedabc896",
     "docs/12-gadnix.md",
-    "docs/11-rpinix.md",
-    "docs/10-kitjet.md",
     "docs/11-rpi5.md",
     "docs/12-desktop.md",
     "CLAUDE.md",

@@ -46,4 +46,15 @@
     noto-fonts
     noto-fonts-color-emoji
   ];
+
+  # ── Jellyfin — медиасервер ────────────────────────────────
+  # Включается здесь (а не в storage.nix), потому что это пользовательский
+  # сервис, а не часть хранилища. Может работать и со сторонним NAS,
+  # но на kitjet работает из /tank/media.
+  services.jellyfin = {
+    enable = true;
+    openFirewall = true;
+    # Кэш и конфиги — в /var/lib/jellyfin/ (управляется systemd).
+    # Медиа-библиотека — в /tank/media (ты её добавишь в веб-интерфейс).
+  };
 }
