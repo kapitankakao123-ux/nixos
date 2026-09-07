@@ -1,0 +1,232 @@
+{
+  "main": {
+    "id": "0e954f058799bfc3",
+    "type": "split",
+    "children": [
+      {
+        "id": "436669199fcac684",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e4d15a103435d899",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/01-Репозиторий.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "01-Репозиторий"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "2a263a1570d1a217",
+    "type": "split",
+    "children": [
+      {
+        "id": "e4426dbe1bb4691d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e13fb092e7084e5e",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "3e47ef88fdaaaeff",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "e01ef56cd0fcae25",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "bfc3fe6bc392cac0",
+    "type": "split",
+    "children": [
+      {
+        "id": "b5b602b389ff1a16",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "380c52e5ea01b2ce",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "23ca1b94c71256df",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "a2ace4d004fe60da",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "20e0b7a572c5b5a7",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "58564ac17826abbf",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          },
+          {
+            "id": "c2b2e6bb8b93e92b",
+            "type": "leaf",
+            "state": {
+              "type": "claudian-view",
+              "state": {
+                "tabWorkspace": {
+                  "version": 1,
+                  "openTabs": [
+                    {
+                      "tabId": "tab-1788727791385-95f3yhj",
+                      "conversationId": "conv-1788728597818-4hxmr72oh"
+                    }
+                  ],
+                  "activeTabId": "tab-1788727791385-95f3yhj"
+                }
+              },
+              "icon": "bot",
+              "title": "Claudian"
+            }
+          }
+        ],
+        "currentTab": 5
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "realclaudian:Open Claudian": false
+    }
+  },
+  "active": "e4d15a103435d899",
+  "lastOpenFiles": [
+    "docs/00-Проект.md",
+    "docs/sed8csDLm",
+    "docs/sedkULiC6",
+    "docs/01-Репозиторий.md",
+    "CLAUDE.md.tmp.15440.731646913f95",
+    "sedlRPtKy",
+    "sedzGktnL",
+    "docs/00-Проект.md.tmp.15440.bce04bde173d",
+    "docs/00-Проект.md.tmp.15440.e59d5e320395",
+    "docs/sedtzsQv0",
+    "docs/sedMNJkKb",
+    "docs/12-gadnix.md.tmp.15440.051dedabc896",
+    "docs/12-gadnix.md",
+    "docs/11-rpinix.md",
+    "docs/10-kitjet.md",
+    "docs/11-rpi5.md",
+    "docs/12-desktop.md",
+    "CLAUDE.md",
+    "Welcome.md"
+  ]
+}

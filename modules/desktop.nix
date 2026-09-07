@@ -18,6 +18,11 @@
     };
   };
 
+  # Монтирование флешек и внешних дисков из файлового менеджера.
+  # Это системная часть: демон + udev-правила + доступ через polkit,
+  # поэтому здесь, а не в home. Сам dolphin — в home/common.nix.
+  services.udisks2.enable = true;
+
   security.polkit.enable = true;
   services.gnome.gnome-keyring.enable = true;   # хранилище паролей для приложений
 

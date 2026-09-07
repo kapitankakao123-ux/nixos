@@ -1,0 +1,23 @@
+{
+  "id": "conv-1788728597818-4hxmr72oh",
+  "providerId": "claude",
+  "title": "Raspberry Pi 5 NixOS Virtualization Options",
+  "titleGenerationStatus": "success",
+  "createdAt": 1788728597835,
+  "lastActivityAt": 1788729138522,
+  "sessionId": "e57da31c-b74a-4879-a081-34b1726019a7",
+  "selectedModel": "opus",
+  "providerState": {
+    "providerSessionId": "e57da31c-b74a-4879-a081-34b1726019a7"
+  },
+  "usage": {
+    "model": "opus",
+    "inputTokens": 2,
+    "cacheCreationInputTokens": 589,
+    "cacheReadInputTokens": 59436,
+    "contextWindow": 1000000,
+    "contextTokens": 60027,
+    "percentage": 6,
+    "contextWindowIsAuthoritative": true
+  }
+}

@@ -52,7 +52,31 @@
     obsidian                                         # unfree, allowUnfree уже включён
     pkgs.unstable.claude-code                        # свежий, из unstable
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
+
+    # ── Dolphin ───────────────────────────────────────────────
+    # Файловый менеджер из KDE. Он здесь, а не в системе: обычное
+    # GUI-приложение, root ему не нужен, юнитов и udev-правил не тянет.
+    # Единственная его системная часть — udisks2, она в modules/desktop.nix.
+    kdePackages.dolphin
+    # Спутники. Без них dolphin запустится, но будет заметно куцым —
+    # KDE вынесла эти куски в отдельные пакеты, а вне Plasma их никто
+    # не подтягивает автоматически.
+    kdePackages.kio-extras              # протоколы sftp://, smb://, mtp:// в адресной строке
+    kdePackages.kdegraphics-thumbnailers # превью картинок и PDF
+    kdePackages.ffmpegthumbs             # превью видео
+    kdePackages.breeze-icons             # иконки: вне Plasma темы иконок в системе нет вообще
+    kdePackages.kde-cli-tools            # kioclient + обработчик «Открыть с помощью»
+    kdePackages.ark                      # архивы: без него в контекстном меню нет «Распаковать»
   ];
+
+  # Dolphin — файловый менеджер по умолчанию: на него уходят клики по
+  # папкам из других приложений (xdg-open, «Показать в папке» в браузере).
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "inode/directory" = "org.kde.dolphin.desktop";
+    };
+  };
 
   # Пример декларативной программы: home-manager сам генерирует конфиг
   programs.git = {
