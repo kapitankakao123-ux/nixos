@@ -8,22 +8,25 @@
     ./hardware-configuration.nix
     ../../modules/common.nix
     ../../modules/desktop.nix
-    # Включать по чек-листам в docs/10-kitjet.md, по одному за раз:
-    # ../../modules/storage.nix          # ZFS + samba (см. предупреждение про ядро внутри)
-    # ../../modules/virtualisation.nix   # libvirt/KVM
+    ../../modules/storage.nix           # ZFS-пул tank + samba
+    # ../../modules/virtualisation.nix  # libvirt/KVM — по чек-листу в docs/10-kitjet.md
   ];
 
   networking.hostName = "kitjet";
 
-  # hostId нужен ZFS, чтобы понять, её ли это пул. Уникален на машину.
-  # Раскомментировать вместе с modules/storage.nix. Значение — 8 hex-символов,
-  # взять из `head -c 8 /etc/machine-id` и больше НИКОГДА не менять.
-  # networking.hostId = "";
+  # hostId нужен ZFS, чтобы понять, её ли это пул: при импорте он
+  # сверяет записанный в пуле hostId с текущим. Уникален на машину,
+  # менять нельзя — иначе пул начнёт требовать `zpool import -f`.
+  # Значение взято из `head -c 8 /etc/machine-id`.
+  networking.hostId = "ab1bac40";
 
   # ── Загрузка ─────────────────────────────────────────────────
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # boot.kernelPackages здесь НЕ задаётся: ядро выбирает
+  # modules/storage.nix, привязывая его к версии ZFS.
+  # Вернуть linuxPackages_latest можно только вместе с отказом от ZFS.
 
   # ── Сборка для Pi ────────────────────────────────────────────
   # Позволяет собирать aarch64 прямо здесь (через qemu-user), чтобы не

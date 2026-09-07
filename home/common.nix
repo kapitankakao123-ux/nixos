@@ -52,6 +52,7 @@
     obsidian                                         # unfree, allowUnfree уже включён
     pkgs.unstable.claude-code                        # свежий, из unstable
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
+    vscode        
 
     # ── Dolphin ───────────────────────────────────────────────
     # Файловый менеджер из KDE. Он здесь, а не в системе: обычное
