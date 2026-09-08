@@ -44,10 +44,13 @@
       hosts = {
         kitjet = {
           system = "x86_64-linux";
-          home = ./home/kitjet.nix;   # null, если home-manager на хосте не нужен
+          home = ./home/kitjet.nix;
         };
-        # gadnix = { system = "x86_64-linux";  home = ./home/gadnix.nix; };
-        # rpinix = { system = "aarch64-linux"; home = null; };
+        rpinix = {
+          system = "aarch64-linux";
+          home = null;   # Pi5 — сервер без home-manager
+        };
+        # gadnix = { system = "x86_64-linux"; home = ./home/gadnix.nix; };
       };
 
       # Сборка одной системы из описания выше.

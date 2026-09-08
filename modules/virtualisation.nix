@@ -8,7 +8,7 @@
     enable = true;
     qemu.runAsRoot = false;
     qemu.swtpm.enable = true;          # TPM для гостей, которым он нужен
-    qemu.ovmf.enable = true;           # UEFI-прошивка для гостей
+    # qemu.ovmf удалён (OVMF теперь по умолчанию)
   };
   programs.virt-manager.enable = true;
 
@@ -16,11 +16,11 @@
   # на каждое действие. Проверка: `groups`.
   users.users.gadjet.extraGroups = [ "libvirtd" "kvm" ];
 
-  # ── Мост br0 ─────────────────────────────────────────────────
+  # ── Мост br0 (опционально) ────────────────────────────────
   # Нужен, чтобы виртуалки получали адрес из домашней сети, а не NAT.
-  # Подставить своё имя интерфейса (`ip link`) и раскомментировать.
-  # ОСТОРОЖНО: неверное имя = машина без сети, чинить с клавиатуры.
-   networking.networkmanager.unmanaged = [ "enp5s0" ];
-   networking.bridges.br0.interfaces = [ "enp5s0" ];
-   networking.interfaces.br0.useDHCP = true;
+  # Интерфейс: enp5s0. ОСТОРОЖНО: неверное имя = машина без сети.
+  # Раскомментировать только если нужен мост:
+  # networking.networkmanager.unmanaged = [ "enp5s0" ];
+  # networking.bridges.br0.interfaces = [ "enp5s0" ];
+  # networking.interfaces.br0.useDHCP = true;
 }
