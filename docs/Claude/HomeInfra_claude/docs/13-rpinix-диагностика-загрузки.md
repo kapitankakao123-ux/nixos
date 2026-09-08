@@ -1,0 +1,136 @@
+---
+tags: [rpinix, pi5, диагностика, загрузка]
+---
+
+# rpinix — диагностика загрузки (замирание на vc4-drm)
+
+Состояние на 2026-09-09: образ собирается, Pi 5 стартует с NVMe, но экран
+замирает на строке
+
+```
+vc4-drm axi:gpu: bcm2712_iommu_of_xlate: MMU 1000005200.iommu
+```
+
+HDMI дальше не обновляется, DSI пустой, по сети машина не появляется
+(ping-развёртка `192.168.10.0/24` с kitjet — ни одного MAC из диапазонов
+Raspberry Pi: `2c:cf:67`, `d8:3a:dd`, `dc:a6:32`, `e4:5f:01`, `b8:27:eb`).
+
+## Главное: это ДВА разных вопроса
+
+Не смешивать, иначе ищешь не там:
+
+1. **Почему замер экран.** Скорее всего не «зависание», а передача консоли:
+   vc4 поднимает KMS, firmware-framebuffer уходит, fbcon не переезжает на
+   новое DRM-устройство → картинка остаётся на последнем кадре. Система при
+   этом может спокойно грузиться дальше.
+2. **Докуда реально дошла загрузка.** Отвечает только лог, а не экран.
+
+## Проверенные версии, которые НЕ подтвердились
+
+Обе выглядели убедительно и обе оказались мимо. Записано, чтобы не проверять
+второй раз.
+
+### Неверный оверлей vc4 — НЕТ
+
+`raspberry-pi-nix` в секции `[all]` безусловно пишет `dtoverlay=vc4-kms-v3d`,
+без учёта платы. Выглядит как баг: generic `.dtbo` не содержит `compatible`
+на `bcm2711`/`bcm2712` (он для Pi 1–3), отдельные `vc4-kms-v3d-pi4.dtbo` и
+`vc4-kms-v3d-pi5.dtbo` в прошивке лежат.
+
+Но имя подменяет **сама прошивка**. В `overlays/overlay_map.dtb` есть правило
+`vc4-kms-v3d` → `-pi4` для `bcm2711` и → `-pi5` для `bcm2712`, а каталог
+`overlays/` копируется в раздел FIRMWARE целиком
+(`sd-image/default.nix`, строка 49). Значит на Pi 5 фактически грузится
+`vc4-kms-v3d-pi5`. Переопределять вручную не нужно.
+
+Проверка содержимого `.dtbo` без `dtc` и `strings`:
+
+```bash
+D=$(dirname $(find /nix/store -maxdepth 4 -name 'vc4-kms-v3d-pi5.dtbo' | head -1))
+tr -c '[:print:]' '\n' < $D/overlay_map.dtb | grep -nE 'vc4-kms|bcm271'
+```
+
+### Два `root=` в cmdline — НЕТ
+
+В `boot.kernelParams` действительно два:
+
+```
+root=PARTUUID=2178694e-02 ... root=fstab
+```
+
+`root=fstab` — не мусор и не опечатка, а штатный механизм systemd-initrd:
+опция `boot.initrd.systemd.root` (nixpkgs, `system/boot/systemd/initrd.nix:532`)
+по умолчанию равна `"fstab"` и означает «монтируй корень по `fileSystems`,
+запечённым в initrd». Ядро тут `root=` не разбирает — это делает initrd.
+Параметр от `sd-image` просто избыточен.
+
+## Что делать дальше — по порядку
+
+### Шаг 1. Прочитать журнал с NVMe (самое дешёвое, ничего не пересобирает)
+
+Загрузиться с SD, подключить NVMe и посмотреть, что успело записаться:
+
+```bash
+lsblk -o NAME,SIZE,LABEL,FSTYPE
+sudo mkdir -p /mnt/nvme
+sudo mount /dev/nvme0n1p2 /mnt/nvme
+sudo journalctl -D /mnt/nvme/var/log/journal --no-pager | tail -100
+```
+
+Интерпретация:
+
+- **журнал есть и обрывается на чём-то осмысленном** → загрузка шла долго,
+  причина видна прямо в конце;
+- **каталога `/mnt/nvme/var/log/journal` нет или он пуст** → до записи журнала
+  не дошло, останов ранний (initrd / монтирование корня);
+- **корень вообще не растянулся** (`lsblk` показывает раздел ~2 ГБ вместо 238) →
+  не отработал `expand-root-partition`.
+
+### Шаг 2. Убрать KMS и увидеть остаток загрузки на HDMI
+
+Раздел FIRMWARE — обычный vfat, `config.txt` правится **напрямую, без
+пересборки образа**. Это главный инструмент быстрой итерации.
+
+```bash
+sudo mount /dev/nvme0n1p1 /mnt/fw
+sudo cp /mnt/fw/config.txt /mnt/fw/config.txt.bak
+sudo sed -i 's/^dtoverlay=vc4-kms-v3d$/#&/' /mnt/fw/config.txt
+sudo umount /mnt/fw
+```
+
+Без KMS консоль остаётся на простом firmware-framebuffer и HDMI продолжает
+печатать до конца загрузки. Если после этого система догружается и отвечает
+по сети — проблема была только в передаче консоли, а не в загрузке.
+
+Вернуть обратно: `sudo cp /mnt/fw/config.txt.bak /mnt/fw/config.txt`.
+
+### Шаг 3. Serial console (если есть USB-TTL)
+
+Уже всё настроено, докупать в конфиг ничего не надо:
+
+- `enable_uart=1` есть в сгенерированном `config.txt`;
+- `console=serial0,115200n8` есть в `kernelParams`
+  (`raspberry-pi-nix.serial-console.enable` по умолчанию `true`).
+
+Подключение: GPIO 6 (GND), 8 (TXD), 10 (RXD), скорость 115200.
+UART отдаёт весь лог, включая то, что происходит после смерти HDMI-консоли.
+
+### Шаг 4. Если выяснится, что дело в сети, а не в загрузке
+
+Отдельно проверить: live-система с SD получала адрес `192.168.10.157`.
+Если она сидела на Wi-Fi, а не на Ethernet, то у установленной системы
+никаких Wi-Fi-кредов нет и по сети её не будет **при полностью исправной
+загрузке**. В `modules/common.nix` включён только NetworkManager
+(`networking.networkmanager.enable = true`), профилей Wi-Fi в репозитории нет.
+
+## Полезные проверки без сборки
+
+```bash
+cd ~/nixos
+# итоговый config.txt (это строковая опция, сборка не нужна)
+nix eval --raw .#nixosConfigurations.rpinix.config.hardware.raspberry-pi.config-generated
+# итоговый cmdline
+nix eval --json .#nixosConfigurations.rpinix.config.boot.kernelParams
+```
+
+[[11-rpinix]] · [[12-rpinix-portable]] · [[30-Грабли]]

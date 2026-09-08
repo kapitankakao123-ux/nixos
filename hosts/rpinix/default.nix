@@ -29,24 +29,13 @@
   # ядро на самой малине несколько часов.
 
   # ── Дисплей: оверлей vc4 ─────────────────────────────────
-  # raspberry-pi-nix в секции `all` (общей для обеих плат) безусловно ставит
-  # dtoverlay=vc4-kms-v3d — это оверлей от Pi 4. На Pi 5 конвейер дисплея
-  # другой, и Pi4-шный оверлей цепляется не к тем узлам device tree: ядро
-  # виснет на "vc4-drm axi:gpu: bcm2712_iommu_of_xlate", без HDMI, без DSI
-  # и не доходя до userspace (машина не появляется в сети).
-  # Правильный оверлей для bcm2712 — vc4-kms-v3d-pi5, он лежит отдельным
-  # .dtbo в прошивке. Апстрим ставит enable через mkDefault, поэтому
-  # обычного false достаточно, mkForce не нужен.
-  hardware.raspberry-pi.config.all.dt-overlays = {
-    vc4-kms-v3d = {
-      enable = false;
-      params = { };
-    };
-    vc4-kms-v3d-pi5 = {
-      enable = true;
-      params = { };
-    };
-  };
+  # ПРОВЕРЕНО: переопределять оверлей здесь НЕ нужно.
+  # raspberry-pi-nix безусловно пишет dtoverlay=vc4-kms-v3d, и это выглядит
+  # как ошибка: generic .dtbo не содержит compatible на bcm2711/bcm2712,
+  # он для Pi 1-3. Но имя подменяет сама прошивка — в overlays/overlay_map.dtb
+  # есть правило vc4-kms-v3d -> vc4-kms-v3d-pi4 (bcm2711) / -pi5 (bcm2712),
+  # а каталог overlays/ копируется в раздел FIRMWARE целиком.
+  # Значит на Pi 5 фактически грузится vc4-kms-v3d-pi5. Не трогать.
 
   networking.hostName = "rpinix";
 
