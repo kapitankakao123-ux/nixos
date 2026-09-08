@@ -21,7 +21,8 @@
   };
 
   # ── Thermal (управление тепловыми режимами) ───────────
-  services.thermald.enable = true;
+  # thermald только для x86. На aarch64 (Pi5) не работает.
+  services.thermald.enable = pkgs.stdenv.hostPlatform.system != "aarch64-linux";
 
   # ── Дополнительные экономии ───────────────────────────
   networking.wireless.iwd.enable = true;  # iwd меньше ест, чем wpa_supplicant
