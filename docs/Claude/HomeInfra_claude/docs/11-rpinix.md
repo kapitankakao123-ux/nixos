@@ -209,6 +209,59 @@ nix eval --json .#nixosConfigurations.rpinix.config.boot.initrd.availableKernelM
 потерялись, и `build` уехал в аргументы. Команду сборки копировать одной
 строкой (см. шаг 3).
 
+## Зависание на vc4-drm / bcm2712_iommu
+
+Симптом: система стартует, но замирает на
+
+```
+vc4-drm axi:gpu: bcm2712_iommu_of_xlate: MMU 1000005200.iommu
+```
+
+Ни HDMI, ни DSI, отключение DSI не помогает, в сети машина не появляется
+(проверяется ping-развёрткой подсети: ни одного MAC из диапазонов Pi —
+`2c:cf:67`, `d8:3a:dd`, `dc:a6:32`, `e4:5f:01`, `b8:27:eb`). Раз до userspace
+дело не доходит — это настоящее зависание в ядре, а не замерший fbcon.
+
+Причина в самом `raspberry-pi-nix`: секция `all` в `rpi/default.nix` общая
+для обеих плат и безусловно ставит оверлей от Pi 4:
+
+```nix
+dt-overlays = {
+  vc4-kms-v3d = { enable = lib.mkDefault true; params = { }; };
+};
+```
+
+У Pi 5 конвейер дисплея другой, и этот оверлей цепляется не к тем узлам
+device tree. Нужен `vc4-kms-v3d-pi5` — в прошивке он лежит отдельным .dtbo
+рядом с `vc4-kms-v3d.dtbo`. Апстрим ставит `enable` через `mkDefault`,
+поэтому обычного `false` хватает, `mkForce` не нужен:
+
+```nix
+hardware.raspberry-pi.config.all.dt-overlays = {
+  vc4-kms-v3d     = { enable = false; params = { }; };
+  vc4-kms-v3d-pi5 = { enable = true;  params = { }; };
+};
+```
+
+Проверка без сборки — `config-generated` это readOnly-строка:
+
+```bash
+nix eval --raw .#nixosConfigurations.rpinix.config.hardware.raspberry-pi.config-generated
+```
+
+В выводе должен быть `dtoverlay=vc4-kms-v3d-pi5` и не быть `vc4-kms-v3d`.
+
+Если и с pi5-оверлеем виснет — отключить оба и грузиться на простом
+firmware-фреймбуфере (`display_auto_detect` уже включён). Консоль и SSH
+будут, GPU-ускорения нет; это разделяет «не грузится ядро» и «не работает vc4».
+
+### Логи по UART
+
+Ничего настраивать не надо: `serial-console.enable` в raspberry-pi-nix по
+умолчанию `true`, в config.txt уже `enable_uart=1`, в kernelParams —
+`console=serial0,115200n8` и `loglevel=7`. USB-UART на GPIO 8/10 (TX/GND),
+скорость 115200 — и виден весь лог, включая то, что после зависания.
+
 ## Открытые вопросы
 
 - Последний коммит `raspberry-pi-nix` — март 2025, его nixpkgs запинён на январь 2025.
