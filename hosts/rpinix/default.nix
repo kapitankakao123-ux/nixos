@@ -52,7 +52,8 @@
   };
 
   # ── Отключить конфликтующий wireless ───────────────────
-  networking.wireless.enable = false;  # используем iwd из battery-optimization
+  # NetworkManager пытается включить wireless, но iwd это делает
+  networking.wireless.enable = lib.mkForce false;
 
   # Маркер формата данных. НЕ МЕНЯТЬ.
   system.stateVersion = "26.11";
