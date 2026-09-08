@@ -30,6 +30,14 @@
 
   networking.hostName = "rpinix";
 
+  # ── TPM в initrd ─────────────────────────────────────────
+  # nixpkgs добавляет в initrd модули tpm-tis и tpm-crb для всего, кроме
+  # riscv64 и armv7 (nixos/modules/system/boot/systemd/tpm2.nix). aarch64 под
+  # исключение не попадает, а вендорное ядро Raspberry Pi модуль tpm-crb не
+  # собирает → сборка initrd падает на "modprobe: FATAL: Module tpm-crb not found".
+  # На Pi 5 TPM нет физически, так что просто выключаем.
+  boot.initrd.systemd.tpm2.enable = false;
+
   # hardware-configuration.nix здесь НЕ импортируется и fileSystems не
   # задаются: разметку (FIRMWARE + NIXOS_SD) описывает модуль sd-image.
 
