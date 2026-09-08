@@ -6,16 +6,16 @@
 
 | Хост | Арх | Состояние | Роль | Оболочка |
 |---|---|---|---|---|
-| `kitjet` | x86_64 | работает | домашний сервер: ZFS-хранилище, libvirt/KVM, кино в браузере + Jellyfin, рабочее место | niri + DMS |
-| `gadnix` | x86_64 | под переустановку (Arch) | игры, браузер, работа: RDP, WinBox, LibreOffice, VS Code | niri + DMS |
-| `rpinix` | aarch64 | под переустановку (Debian+Proxmox) | Raspberry Pi 5 8 ГБ: kiosk Home Assistant, aarch64-виртуалки, приёмник реплик ZFS | cage (kiosk) |
+| `kitjet` | x86_64 | **работает** | домашний сервер: ZFS-хранилище (tank), libvirt/KVM, Jellyfin, HAOS (виртуалка), рабочее место | niri + DMS |
+| `gadnix` | x86_64 | под переустановку | ПК: игры, браузер, работа (RDP, WinBox, LibreOffice, VS Code) | niri + DMS |
+| `rpinix` | aarch64 | **NixOS, в разработке** | Raspberry Pi 5 портативное: 7" DSI-дисплей, Sway, батареи, контейнеры | Sway (Wayland) |
 
-Пользователь везде `gadjet`. Стабильная ветка nixpkgs 26.05; `rpinix` собирается из `nixpkgs-unstable`.
+Пользователь везде `gadjet`. `kitjet` и `gadnix` на стабильной ветке nixpkgs 26.05; `rpinix` на `nixpkgs-unstable` (aarch64+Pi5 требуют свежего ядра).
 
 ## Раскладка
 
 - `flake.nix` — хосты объявлены один раз, из них генерируются и `nixosConfigurations`, и ноды colmena
-- `modules/` — что машина умеет (common, desktop, storage, virtualisation, kiosk, backup)
+- `modules/` — что машина умеет (common, desktop, storage, virtualisation, container, backup)
 - `home/` — окружение пользователя (home-manager)
 - `hosts/<имя>/` — какая машина что включает + `hardware-configuration.nix`
 - `docs/` — vault Obsidian: контекст проекта, чек-листы, разбор ошибок. **Начинать чтение с `docs/00-Проект.md`.**

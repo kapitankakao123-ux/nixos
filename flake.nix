@@ -65,18 +65,19 @@
         # атрибут-сет. Порядок не важен, важна уникальность присваиваний.
         modules = [
           ./hosts/${name}
-
-          # Home Manager как модуль NixOS: ~/ пересобирается той же
-          # командой nixos-rebuild, отдельная команда не нужна.
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
-            home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
-            home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
-            home-manager.extraSpecialArgs = { inherit inputs; };
-            home-manager.users.gadjet = cfg.home;
-          }
-        ];
+        ] ++ (
+          # Home Manager только если cfg.home != null (есть пользовательское окружение)
+          if cfg.home != null then [
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
+              home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
+              home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
+              home-manager.extraSpecialArgs = { inherit inputs; };
+              home-manager.users.gadjet = cfg.home;
+            }
+          ] else []
+        );
       };
     in
     {

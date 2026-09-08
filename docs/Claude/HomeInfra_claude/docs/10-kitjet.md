@@ -59,7 +59,7 @@ x86_64. Стоит на кухне, подключён к телевизору. 
 - [x] Датасеты `media`, `files`, `git`, `archive`
 - [x] `sudo smbpasswd -a gadjet` и проверка шары с другой машины
 - [x] Вернуть данные из `_migration` в `/tank/files`, потом удалить staging
-- [ ] Решить, чем занять `sda`
+- [x] Решить, чем занять `sda` "musor"
 
 ## Виртуализация (Откладывается до новых дисков, Скоро...)
 
@@ -76,9 +76,9 @@ x86_64. Стоит на кухне, подключён к телевизору. 
 
 ## Медиа
 
-- [ ] Jellyfin поднялся: `http://kitjet.lan:8096`
-- [ ] Библиотека смотрит в `/tank/media`
-- [ ] Проверить аппаратное декодирование (Jellyfin → Playback → Hardware acceleration)
+- [x] Jellyfin запущен: `systemctl status jellyfin` активен, http://localhost:8096 доступен (или http://kitjet.lan:8096 с другой машины)
+- [x] Создать датасет `/tank/media` (после создания пула) и указать его в Jellyfin: Settings → Libraries
+- [ ] После создания `/tank/media` — проверить аппаратное декодирование: Jellyfin → Playback → Hardware acceleration → AMD (если есть) (Jellyfin → Playback → Hardware acceleration)
 - [ ] Автологин в niri без ввода пароля, если сервер должен подниматься сам после перезагрузки
 
 ## Заметки
