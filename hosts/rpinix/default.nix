@@ -26,6 +26,7 @@
 
   boot.kernelParams = [
     "cma=256M"        # CMA для GPU/DSI
+    "root=/dev/nvme0n1"  # root файловая система (важно для загрузки с NVMe)
   ];
 
   boot.kernelModules = [ "vc4" ];  # VideoCore IV для дисплея
