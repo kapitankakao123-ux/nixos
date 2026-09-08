@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/12-rpinix-portable.md",
+                "file": "docs/11-rpinix.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "12-rpinix-portable"
+              "title": "11-rpinix"
             }
           }
         ]
@@ -209,11 +209,13 @@
   },
   "active": "e4d15a103435d899",
   "lastOpenFiles": [
-    "docs/11-rpinix.md.tmp.19800.ddf9d981fc9b",
-    "docs/11-rpinix.md",
-    "docs/10-kitjet.md",
+    "docs/11-rpinix.md.tmp.22714.7108f9e8198c",
+    "docs/11-rpinix.md.tmp.22424.762ea6e771cb",
     "docs/12-gadnix.md",
+    "docs/11-rpinix.md",
     "docs/12-rpinix-portable.md",
+    "docs/11-rpinix.md.tmp.19800.ddf9d981fc9b",
+    "docs/10-kitjet.md",
     "CLAUDE.md.tmp.37692.c327cc527f65",
     "docs/sedvqzbTg",
     "docs/sednPFKO4",
@@ -227,8 +229,6 @@
     "docs/sedZcDR1I",
     "docs/00-Проект.md",
     "docs/sedTyNW9r",
-    "sedKRm4r7",
-    "docs/sed8csDLm",
     "docs/11-rpi5.md",
     "docs/12-desktop.md",
     "CLAUDE.md",

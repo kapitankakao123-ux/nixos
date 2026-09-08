@@ -28,6 +28,26 @@
   # бинарники в nix-community.cachix.org. Поменяешь — будешь компилировать
   # ядро на самой малине несколько часов.
 
+  # ── Дисплей: оверлей vc4 ─────────────────────────────────
+  # raspberry-pi-nix в секции `all` (общей для обеих плат) безусловно ставит
+  # dtoverlay=vc4-kms-v3d — это оверлей от Pi 4. На Pi 5 конвейер дисплея
+  # другой, и Pi4-шный оверлей цепляется не к тем узлам device tree: ядро
+  # виснет на "vc4-drm axi:gpu: bcm2712_iommu_of_xlate", без HDMI, без DSI
+  # и не доходя до userspace (машина не появляется в сети).
+  # Правильный оверлей для bcm2712 — vc4-kms-v3d-pi5, он лежит отдельным
+  # .dtbo в прошивке. Апстрим ставит enable через mkDefault, поэтому
+  # обычного false достаточно, mkForce не нужен.
+  hardware.raspberry-pi.config.all.dt-overlays = {
+    vc4-kms-v3d = {
+      enable = false;
+      params = { };
+    };
+    vc4-kms-v3d-pi5 = {
+      enable = true;
+      params = { };
+    };
+  };
+
   networking.hostName = "rpinix";
 
   # ── TPM в initrd ─────────────────────────────────────────

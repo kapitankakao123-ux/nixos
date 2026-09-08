@@ -109,13 +109,27 @@ nix eval --raw .#nixosConfigurations.rpinix.config.system.build.sdImage.drvPath
 
 ```bash
 cd /tmp/nixos && git pull
-
-nix build .#nixosConfigurations.rpinix.config.system.build.sdImage \
-  --option extra-substituters https://nix-community.cachix.org \
-  --option extra-trusted-public-keys '<строка с сайта кэша>'
 ```
 
-Без кэша соберётся тоже, но вендорное ядро компилируется на Pi очень долго.
+Команда сборки — **одной строкой, без переносов**. Обратные слэши при вставке
+в терминал рвутся, и `nix` начинает принимать `build` за имя флейка
+(`error: cannot find flake 'flake:build'`). Копировать целиком:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' build .#nixosConfigurations.rpinix.config.system.build.sdImage --option extra-substituters https://nix-community.cachix.org --option extra-trusted-public-keys nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+```
+
+Разбор частей:
+
+- `--extra-experimental-features 'nix-command flakes'` — на live-системе с SD
+  флейки выключены, без флага любая команда `nix` откажется работать
+- `--option extra-substituters …` + `--option extra-trusted-public-keys …` —
+  кэш с собранными вендорными ядрами. Ключ сверен со страницей
+  https://nix-community.cachix.org
+- порядок важен: `build` идёт сразу после общих флагов `nix`
+
+Без кэша соберётся тоже — убери обе `--option`. Но вендорное ядро тогда
+компилируется на самой Pi, это надолго.
 
 ### 4. Записать образ на NVMe
 
@@ -159,6 +173,41 @@ sync
 
 Общий вывод: `nix flake show` показывает, что конфигурация *объявлена*, но не
 разворачивает модули. Проверять надо `nix eval …config.system.build.<цель>.drvPath`.
+
+## Ошибки сборки
+
+### `modprobe: FATAL: Module tpm-crb not found`
+
+Падает `linux-rpi-*-modules-shrunk` при сборке initrd.
+
+Причина в `nixos/modules/system/boot/systemd/tpm2.nix`:
+
+```nix
+boot.initrd.availableKernelModules = [ "tpm-tis" ]
+  ++ lib.optional (!(isRiscV64 || isArmv7)) "tpm-crb";
+```
+
+aarch64 под исключение не попадает, поэтому `tpm-crb` требуется всегда. Вендорное
+ядро Raspberry Pi этот модуль не собирает — он для x86/ACPI. У Pi 5 TPM нет
+физически, поэтому лечится отключением:
+
+```nix
+boot.initrd.systemd.tpm2.enable = false;
+```
+
+Проверить, что подействовало, не запуская сборку:
+
+```bash
+nix eval --json .#nixosConfigurations.rpinix.config.boot.initrd.availableKernelModules | tr ',' '\n' | grep -i tpm
+```
+
+Пустой вывод — исправлено.
+
+### `error: cannot find flake 'flake:build'`
+
+Не ошибка nix, а порванная при вставке в терминал строка: обратные слэши
+потерялись, и `build` уехал в аргументы. Команду сборки копировать одной
+строкой (см. шаг 3).
 
 ## Открытые вопросы
 
