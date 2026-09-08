@@ -1,61 +1,54 @@
-# hosts/rpinix — Raspberry Pi 5 портативное устройство, aarch64.
-# 7" DSI-дисплей, батареи, NVMe, Sway, контейнеры.
+# hosts/rpinix — Raspberry Pi 5 (BCM2712), aarch64.
+#
+# ЭТАП 1: минимальная загружаемая система. Sway, контейнеры и оптимизация
+# батареи намеренно отключены — сначала добиваемся загрузки с NVMe,
+# потом наращиваем по одному модулю. Разбор в docs/11-rpinix.md.
+#
+# Загрузка Pi 5 устроена не как на x86:
+#   EEPROM → раздел FIRMWARE (vfat) → config.txt → kernel.img напрямую.
+# U-Boot и extlinux здесь НЕ участвуют: ubootRaspberryPi5 в nixpkgs
+# не существует, а raspberry-pi-nix при uboot.enable = false (по умолчанию)
+# кладёт ядро прямо в раздел прошивки — это и есть штатный путь для NVMe.
 { config, pkgs, lib, ... }:
 
 {
   imports = [
-    ./hardware-configuration.nix
     ../../modules/common.nix
-    ../../modules/desktop-light.nix   # Sway для 7" DSI-дисплея
-    ../../modules/battery-optimization.nix
-    ../../modules/container.nix
+    # Включать по одному ПОСЛЕ первой успешной загрузки:
+    # ../../modules/desktop-light.nix        # Sway на 7" DSI
+    # ../../modules/battery-optimization.nix # питание (проверить tlp на ARM)
+    # ../../modules/container.nix            # Podman
   ];
+
+  # ── Плата ────────────────────────────────────────────────
+  # bcm2712 = Pi 5 / Pi 500 / CM5. bcm2711 — это Pi 4.
+  raspberry-pi-nix.board = "bcm2712";
+
+  # kernel-version намеренно оставлен по умолчанию: под него собраны
+  # бинарники в nix-community.cachix.org. Поменяешь — будешь компилировать
+  # ядро на самой малине несколько часов.
 
   networking.hostName = "rpinix";
-  # networking.hostId = "";  # заполнить: head -c 8 /etc/machine-id на Pi после первой загрузки
 
-  # ── Загрузчик для Pi5 ──────────────────────────────────
-  # generic-extlinux-compatible работает на любых ARM устройствах,
-  # включая Pi5. boot.loader.raspberryPi удалён в nixpkgs.
-  boot.loader.grub.enable = false;
-  boot.loader.generic-extlinux-compatible.enable = true;
+  # hardware-configuration.nix здесь НЕ импортируется и fileSystems не
+  # задаются: разметку (FIRMWARE + NIXOS_SD) описывает модуль sd-image.
 
-  # ── Ядро ───────────────────────────────────────────────
-  # Pi5 нужно современное ядро с поддержкой ARM64v8.
-  boot.kernelPackages = pkgs.linuxPackages_6_6;
-
-  boot.kernelParams = [
-    "cma=256M"        # CMA для GPU/DSI
-    "root=/dev/nvme0n1"  # root файловая система (важно для загрузки с NVMe)
-  ];
-
-  boot.kernelModules = [ "vc4" ];  # VideoCore IV для дисплея
-
-  # ── Сеть ───────────────────────────────────────────────
+  # ── Сеть ─────────────────────────────────────────────────
   services.openssh = {
     enable = true;
     openFirewall = true;
     settings = {
-      PasswordAuthentication = true;  # TODO: выключить, когда добавишь ключ
-      PermitRootLogin = "yes";       # TODO: выключить после первой настройки
+      PasswordAuthentication = true;  # TODO: выключить после добавления ключа
+      PermitRootLogin = "yes";        # TODO: выключить после первой настройки
     };
   };
 
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [ 22 ];
 
-  # ── Файловая система ───────────────────────────────────
-  # Ставится на /dev/nvme0n1 (238 ГБ NVMe на Pi5)
-  fileSystems."/" = {
-    device = "/dev/nvme0n1";
-    fsType = "btrfs";
-    options = [ "defaults" ];
-  };
+  # Пароль на первую загрузку. Сменить сразу после входа: passwd
+  users.users.gadjet.initialPassword = "1414";
 
-  # ── Отключить конфликтующий wireless ───────────────────
-  # NetworkManager пытается включить wireless, но iwd это делает
-  networking.wireless.enable = lib.mkForce false;
-
-  # Маркер формата данных. НЕ МЕНЯТЬ.
-  system.stateVersion = "26.11";
+  # Совпадает с веткой nixpkgs, на которой собирается этот flake (26.05).
+  system.stateVersion = "26.05";
 }

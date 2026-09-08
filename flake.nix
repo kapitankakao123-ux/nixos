@@ -31,6 +31,14 @@
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Raspberry Pi 5. В самом nixpkgs Pi 5 не собирается:
+    # ubootRaspberryPi5 нет, а config.txt в sd-image-aarch64 не имеет [pi5].
+    # Этот флейк даёт вендорное ядро (bcm2712), прошивку и раздел FIRMWARE.
+    # ВАЖНО: follows здесь НЕ ставим. У флейка свой пин nixpkgs, под который
+    # собраны ядра в nix-community.cachix.org. Переопределим — промахнёмся
+    # мимо кэша и будем компилировать ядро на самой малине.
+    raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
   };
 
   # ─────────────────────────────────────────────────────────────
@@ -48,7 +56,14 @@
         };
         rpinix = {
           system = "aarch64-linux";
-          home = null;   # Pi5 — сервер без home-manager
+          home = null;   # Pi5 — пока без home-manager
+          # Модули из внешних флейков. Для Pi 5 нужны оба:
+          # raspberry-pi — вендорное ядро bcm2712 + прошивка + config.txt,
+          # sd-image     — сборка образа с готовым разделом FIRMWARE.
+          extraModules = [
+            inputs.raspberry-pi-nix.nixosModules.raspberry-pi
+            inputs.raspberry-pi-nix.nixosModules.sd-image
+          ];
         };
         # gadnix = { system = "x86_64-linux"; home = ./home/gadnix.nix; };
       };
@@ -65,7 +80,7 @@
         # атрибут-сет. Порядок не важен, важна уникальность присваиваний.
         modules = [
           ./hosts/${name}
-        ] ++ (
+        ] ++ (cfg.extraModules or [ ]) ++ (
           # Home Manager только если cfg.home != null (есть пользовательское окружение)
           if cfg.home != null then [
             home-manager.nixosModules.home-manager
