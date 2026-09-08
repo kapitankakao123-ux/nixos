@@ -1,317 +1,175 @@
 ---
-tags: [хост, rpinix, pi5, установка]
+tags: [хост, rpinix, pi5, установка, гайд]
 ---
 
-# rpinix — Raspberry Pi 5 на NixOS
+# rpinix — установка NixOS на Raspberry Pi 5
 
-Гайд по установке NixOS на Pi5 вместо Proxmox и переделке роли: от гипервизора к контейнерам.
+> **Этот файл переписан 2026-09-09.** Предыдущая версия содержала неверные
+> инструкции (`boot.loader.raspberryPi`, `hardware.raspberry-pi."5"`,
+> generic-extlinux). Они не работают — почему, разобрано ниже в «Тупики».
 
-## Переосмысление архитектуры
+## Почему Pi 5 не ставится «как обычный aarch64»
 
-**Было:** HAOS + aarch64-VM на Pi5 (утяжеляет систему, 6+ ГБ RAM).
-**Стало:** контейнеры на Pi5 (lightweigh), HAOS как VM на kitjet (мощнее).
+Три факта, проверенные по исходникам nixpkgs 26.05:
 
-### Новые роли машин
+1. **`boot.loader.raspberryPi` удалён.** В `nixos/modules/rename.nix` от него
+   осталась заглушка `mkRemovedOptionModule`, которая роняет вычисление.
+2. **`ubootRaspberryPi5` не существует.** В nixpkgs есть `ubootRaspberryPi`,
+   `…Pi2`, `…Pi3_32bit/64bit`, `…Pi4_32bit/64bit`, `…PiAarch64`, `…PiZero` —
+   и всё. U-Boot для Pi 5 нет, значит extlinux-путь для Pi 5 не собирается.
+3. **`sd-image-aarch64.nix` не знает про Pi 5.** В его `config.txt` есть секции
+   `[pi3]`, `[pi02]`, `[pi4]`, `[cm4]`, но нет `[pi5]`, и `bcm2712-rpi-5-b.dtb`
+   туда не копируется.
 
-| Хост | Роль | ОЗУ | Что запускать |
-| --- | --- | --- | --- |
-| **kitjet** | сервер: хранилище, гипервизор | 16 ГБ | ZFS, Jellyfin, HAOS (VM), KVM-образы |
-| **rpinix** | Pi5: контейнеры, реплика | 8 ГБ | Podman, бэкапы ZFS, лёгкие сервисы |
-| **gadnix** | PC: работа, игры | 32 ГБ | niri, браузер, RDP, VS Code |
+Плюс отдельная ловушка, которая стоила вечера:
 
-### Что меняется в конфиге
+**`nixos-install` не наполняет раздел прошивки.** Прошивка пишется только
+сборщиком образа (`sdImage.populateFirmwareCommands`). Поэтому установка на
+чистый NVMe даёт пустой FAT-раздел и `GPT: no bootable partitions` — сколько
+ни переустанавливай.
 
-Старое (`modules/kiosk.nix`):
+Решение — флейк [`raspberry-pi-nix`](https://github.com/nix-community/raspberry-pi-nix):
+в нём есть вендорное ядро под `bcm2712`, вендорная прошивка и сборка образа
+с готовым разделом `FIRMWARE`.
 
-```nix
-virtualisation.libvirtd.enable = true;    # ← убрать
-programs.cage.enable = true;               # ← убрать (kiosk)
-services.home-assistant.enable = true;    # ← убрать (идёт на kitjet)
+## Как на самом деле грузится Pi 5
+
+```
+EEPROM (BOOT_ORDER) → раздел FIRMWARE (vfat) → config.txt → kernel.img → initrd → корень (ext4)
 ```
 
-Новое (`modules/container.nix`):
+U-Boot и `extlinux.conf` в этой схеме **не участвуют**. У `raspberry-pi-nix`
+опция `raspberry-pi-nix.uboot.enable` по умолчанию `false`, и в её описании
+прямо сказано, что это нужный режим для «менее типичных схем, например
+загрузки с NVMe». Ядро кладётся прямо в раздел прошивки.
+
+Следствие: **корень обязан быть ext4**, `root=PARTUUID=<id>-02`. btrfs здесь
+не подходит.
+
+## Конфиг
+
+`hosts/rpinix/default.nix` — этап 1, минимально загружаемая система:
 
 ```nix
-virtualisation.podman.enable = true;
-virtualisation.oci-containers.containers = {
-  # сюда лёгкие контейнеры: nginx, PostgreSQL, influxdb, etc.
+imports = [ ../../modules/common.nix ];
+raspberry-pi-nix.board = "bcm2712";   # Pi 5. bcm2711 — это Pi 4
+system.stateVersion = "26.05";
+```
+
+Чего в нём намеренно **нет**:
+
+- `hardware-configuration.nix` и `fileSystems` — разметку описывает модуль `sd-image`
+- `boot.kernelPackages` — ядро выбирает `raspberry-pi-nix`
+- `boot.loader.*` — загрузчиком управляет тот же модуль
+- Sway, контейнеры, оптимизация батареи — подключаются по одному ПОСЛЕ первой загрузки
+
+Во `flake.nix` модули подключены через `extraModules`:
+
+```nix
+rpinix = {
+  system = "aarch64-linux";
+  home = null;
+  extraModules = [
+    inputs.raspberry-pi-nix.nixosModules.raspberry-pi
+    inputs.raspberry-pi-nix.nixosModules.sd-image
+  ];
 };
 ```
 
-**Главное:** ZFS, реплики, backup-логика **не меняются**. Pi5 остаётся приёмником `tank/backup` из kitjet.
+**`raspberry-pi-nix` подключён без `inputs.nixpkgs.follows`.** Это не забывчивость:
+у флейка свой пин nixpkgs, под который CI собрал ядра в `nix-community.cachix.org`.
+Переопределишь nixpkgs — промахнёшься мимо кэша и будешь компилировать ядро
+на самой малине несколько часов.
 
-## Установка NixOS на Pi5
+## Порядок установки
 
-### Требования
-
-- **Raspberry Pi 5** с 8 ГБ RAM (проверено на этой конфигурации)
-- **NVMe 1 ТБ** (в адаптере M.2 to USB, подключённый по USB 3.0)
-- **Интернет** (для скачивания пакетов)
-- **Другая машина** с Linux/macOS для записи SD-карты
-- `nixos-aarch64-sd-image` — образ для Pi 5
-
-### Шаг 1: Скачать образ NixOS
-
-```bash
-# На машине, с которой будешь писать образ
-cd /tmp
-wget https://hydra.nixos.org/build/XXXXXXX/download/1/nixos-sd-image-24.11-aarch64-linux.img.zst
-# или для unstable (рекомендуется для Pi5):
-wget https://hydra.nixos.org/build/XXXXXXX/download/1/nixos-sd-image-unstable-aarch64-linux.img.zst
-```
-
-Актуальные ссылки найди на https://channels.nixos.org/ → `nixos-unstable` → `latest-iso` → `sd-image-aarch64`.
-
-### Шаг 2: Написать на SD-карту
-
-```bash
-# Найти устройство SD-карты
-lsblk -d -o NAME,SIZE,MODEL
-
-# Распаковать и написать (осторожно! -if /dev/zero стирает!)
-zstd -d nixos-sd-image-unstable-aarch64-linux.img.zst -o nixos.img
-sudo dd if=nixos.img of=/dev/sdX bs=4M status=progress
-sudo sync
-```
-
-Замени `sdX` на actual устройство (например, `sdb`, **не** `sdb1`!).
-
-### Шаг 3: Загрузиться с SD и поднять сеть
-
-1. Вставь SD-карту в Pi5
-2. Подключи экран (HDMI) + клавиатуру (USB)
-3. Подключи Pi5 к сети (Ethernet или Wi-Fi через меню)
-4. Включи питание
-
-На экране увидишь `login:` → вход как `root` без пароля.
-
-### Шаг 4: Подготовить NVMe
-
-```bash
-# На Pi в login-сессии root
-sudo su -
-
-# Найти NVMe
-lsblk
-
-# Партиционировать: GPT с разделом для NixOS
-parted /dev/nvme0n1 mklabel gpt
-parted /dev/nvme0n1 mkpart ESP fat32 1MiB 513MiB
-parted /dev/nvme0n1 mkpart primary ext4 513MiB 100%
-parted /dev/nvme0n1 set 1 boot on
-
-# Файловые системы
-mkfs.fat -F 32 -n BOOT /dev/nvme0n1p1
-mkfs.ext4 -L nixos /dev/nvme0n1p2
-
-# Примонтировать
-mount /dev/nvme0n1p2 /mnt
-mkdir -p /mnt/boot
-mount /dev/nvme0n1p1 /mnt/boot
-```
-
-### Шаг 5: Сгенерировать hardware-configuration
-
-```bash
-nixos-generate-config --root /mnt
-
-# Это создаст /mnt/etc/nixos/hardware-configuration.nix
-# Скопировать его в репозиторий:
-cat /mnt/etc/nixos/hardware-configuration.nix
-# (выписать руками или передать через SSH)
-```
-
-### Шаг 6: Создать configuration.nix для Pi5
-
-На машине, где лежит репозиторий (kitjet):
-
-```bash
-# Скопировать hardware-config
-cp /mnt/etc/nixos/hardware-configuration.nix ~/nixos/hosts/rpinix/
-
-# Создать базовый конфиг (см. шаблон ниже)
-cat > ~/nixos/hosts/rpinix/default.nix <<'CONF'
-{ config, pkgs, lib, ... }:
-{
-  imports = [
-    ./hardware-configuration.nix
-    ../../modules/common.nix
-    # ../../modules/container.nix    # когда создашь
-    # ../../modules/backup.nix       # когда создашь
-  ];
-
-  networking.hostName = "rpinix";
-  networking.hostId = "<8 hex из head -c 8 /etc/machine-id>";
-
-  # aarch64 + Pi5 требует unstable
-  # (flake.nix это уже определяет, но для подстраховки можно указать явно)
-
-  boot.loader.raspberryPi = {
-    enable = true;
-    version = 5;
-  };
-
-  # Pi5 нет ни UEFI, ни systemd-boot — используется proprietary bootloader
-  boot.kernelPackages = pkgs.linuxPackages_6_6;   # LTS, аппаратная поддержка Pi5
-
-  # Минимум системы: SSH, NTP, firewall
-  services.openssh.enable = true;
-  services.openssh.openFirewall = true;
-
-  networking.firewall.enable = true;
-  networking.firewall.allowedTCPPorts = [ 22 ];    # SSH только, остальное при надобности
-
-  # Статический адрес (опционально, но рекомендуется для сервера)
-  # networking.interfaces.eth0.ipv4.addresses = [{
-  #   address = "192.168.1.100";
-  #   prefixLength = 24;
-  # }];
-
-  system.stateVersion = "24.11";    # или unstable версия
-}
-CONF
-```
-
-### Шаг 7: Собрать конфиг на kitjet
-
-На machine-A (kitjet) из репозитория:
+### 1. На kitjet: закоммитить и запушить
 
 ```bash
 cd ~/nixos
-git add hosts/rpinix/
-nix build .#nixosConfigurations.rpinix.config.system.build.sdImage --no-link
+git add -A
+git commit -m "rpinix: Pi 5 через raspberry-pi-nix"
+git push
 ```
 
-Это создаст **SD-образ** со всеми твоими конфигурациями. Он больше, чем базовый, потому что содержит systemd, модули и твои программы.
-
-### Шаг 8: Написать результат на флешку
-
-Полученный образ скопировать на флешку и загрузиться с неё на Pi:
+### 2. Проверить вычисление (не сборку)
 
 ```bash
-# На машине с выходом в интернет (может быть машина, с которой делал dd на шаге 2)
-# Скопировать образ с kitjet
-scp gadjet@kitjet:~/result-*-sd-image /tmp/
-
-# Написать на флешку
-zstd -d <образ>.img.zst -o sd.img
-sudo dd if=sd.img of=/dev/sdX bs=4M status=progress
+nix eval --raw .#nixosConfigurations.rpinix.config.system.build.sdImage.drvPath
 ```
 
-### Шаг 9: Первая загрузка
+Должен вернуться путь `.drv`. Это ловит конфликты опций за секунды вместо часов
+сборки — в отличие от `nix flake show`, который модули не разворачивает.
 
-1. Вставь флешку/SD в Pi5
-2. Включи, жди ~2 мин загрузки
-3. Войди по SSH:
+### 3. На Pi (загруженной с SD): собрать образ
+
+Ключ кэша взять на https://nix-community.cachix.org — там напечатана готовая
+строка `extra-trusted-public-keys`. По памяти его вписывать нельзя: это ключ
+проверки подписи бинарников.
 
 ```bash
-ssh root@rpinix.lan      # если DHCP выдаст имя
-# или
-ssh root@192.168.1.<IP>  # явный адрес, найди в роутере
+cd /tmp/nixos && git pull
+
+nix build .#nixosConfigurations.rpinix.config.system.build.sdImage \
+  --option extra-substituters https://nix-community.cachix.org \
+  --option extra-trusted-public-keys '<строка с сайта кэша>'
 ```
 
-Пароль — пусто (ты сам себе добавишь ключ в конфиге позже).
+Без кэша соберётся тоже, но вендорное ядро компилируется на Pi очень долго.
 
-### Шаг 10: Обновить конфиг в flake.nix
+### 4. Записать образ на NVMe
 
-```nix
-# flake.nix
-hosts = {
-  kitjet = { system = "x86_64-linux"; home = ./home/kitjet.nix; };
-  rpinix = { system = "aarch64-linux"; home = null; };  # ← добавить
-};
+Образ сжат (`sdImage.compressImage` по умолчанию включён):
+
+```bash
+ls result/sd-image/                       # nixos-sd-image-*.img.zst
+zstdcat result/sd-image/*.img.zst | dd of=/dev/nvme0n1 bs=4M status=progress
+sync
 ```
 
-## Модули для rpinix
+Разметку руками делать **не нужно** — она внутри образа (msdos, FIRMWARE + NIXOS_SD).
 
-После успешной первой загрузки создать модули:
+### 5. Вынуть SD и загрузиться
 
-**`modules/container.nix`** — Podman для контейнеров вместо KVM:
+Корень растянется на все 238 ГБ автоматически: за это отвечает
+`sdImage.expandOnBoot` и сервис `expand-root-partition`.
 
-```nix
-{ config, pkgs, lib, ... }:
-{
-  # Podman вместо Docker (лучше с NixOS)
-  virtualisation.podman = {
-    enable = true;
-    autoPrune.enable = true;
-  };
+Вход: `gadjet` / `1414` (задано `users.users.gadjet.initialPassword`).
+**Сменить сразу:** `passwd`.
 
-  # OCI-контейнеры (декларативно из конфига)
-  virtualisation.oci-containers = {
-    backend = "podman";
-    containers = {
-      # Пример:
-      # nginx = {
-      #   image = "nginx:latest";
-      #   ports = ["80:80"];
-      # };
-    };
-  };
-}
-```
+### 6. Дальше — по одному модулю
 
-**`modules/backup.nix`** — приёмник реплик ZFS:
+После подтверждённой загрузки раскомментировать в `hosts/rpinix/default.nix`
+по одному импорту, каждый раз пересобирая:
 
-```nix
-{ config, pkgs, lib, ... }:
-{
-  # ZFS пулы для приёма реплик (если есть)
-  boot.supportedFilesystems = [ "zfs" ];
-  services.zfs.autoScrub.enable = true;
-}
-```
+- `modules/desktop-light.nix` — Sway на 7" DSI
+- `modules/battery-optimization.nix` — питание
+- `modules/container.nix` — Podman
 
-**`hosts/rpinix/default.nix`** (итоговый):
+## Тупики (чтобы не повторять)
 
-```nix
-{ config, pkgs, lib, ... }:
-{
-  imports = [
-    ./hardware-configuration.nix
-    ../../modules/common.nix
-    ../../modules/container.nix      # Podman + OCI
-    # ../../modules/backup.nix       # включить, когда ZFS пул создадите
-  ];
+| Что пробовали | Чем кончилось |
+| --- | --- |
+| `boot.loader.raspberryPi.version = 5` | опция удалена из nixpkgs, вычисление падает |
+| `hardware.raspberry-pi."5"` | опции нет в nixpkgs, она из `nixos-hardware` |
+| generic sd-image + `nixos-install` на NVMe | раздел прошивки пуст → `GPT: no bootable partitions` |
+| корень btrfs на NVMe | Pi-схема требует ext4 и `root=PARTUUID=…-02` |
+| разметка руками (`parted` + `mkfs.fat`) | не помогает: дело не в разметке, а в содержимом FAT |
+| `root=/dev/nvme0n1` в `kernelParams` | выдумано, к делу отношения не имеет |
 
-  networking.hostName = "rpinix";
-  networking.hostId = "...";
+Общий вывод: `nix flake show` показывает, что конфигурация *объявлена*, но не
+разворачивает модули. Проверять надо `nix eval …config.system.build.<цель>.drvPath`.
 
-  boot.loader.raspberryPi = {
-    enable = true;
-    version = 5;
-  };
+## Открытые вопросы
 
-  boot.kernelPackages = pkgs.linuxPackages_6_6;
+- Последний коммит `raspberry-pi-nix` — март 2025, его nixpkgs запинён на январь 2025.
+  С 26.05 он сходится при вычислении, но это заметный отрыв. Следить при обновлениях.
+- `modules/battery-optimization.nix` содержит `services.tlp` и `thermald` — обе вещи
+  x86-ориентированные. `thermald` уже отключён для aarch64; `tlp` на ARM надо проверить
+  отдельно, до включения модуля.
+- `networking.wireless.iwd` + NetworkManager требуют
+  `networking.networkmanager.wifi.backend = "iwd"`, иначе конфликтуют. Сейчас в
+  минимальном конфиге iwd не участвует.
+- Роль машины: 7" DSI + батареи + NVMe — портативное устройство, см. [[12-rpinix-portable]].
 
-  services.openssh.enable = true;
-
-  system.stateVersion = "24.11";
-}
-```
-
-## Проблемы и решения
-
-**«Boot hangs on Rainbow Screen»** — Pi5 нашла SD, но конфиг не подходит.
-- Проверить, что `boot.loader.raspberryPi.version = 5`.
-- Убедиться, что используется correct kernel для Pi5.
-
-**«No space left on device»** — NVMe-раздел слишком мал.
-- Пересоздать разделы больше (шаг 4).
-
-**«Cannot import ZFS» — если потом решишь хранить пулы на Pi**.
-- Убедиться, что `boot.supportedFilesystems = [ "zfs" ]`.
-- Может потребоваться свежее ядро из unstable.
-
-**SSH работает, но без ключей** — по умолчанию вход по паролю (пусто).
-- Добавить публичный ключ в конфиг (`openssh.authorizedKeys.keys`).
-- Выключить `PasswordAuthentication` после проверки ключа.
-
-## Что дальше
-
-- [ ] HAOS как VM на kitjet (см. планы в [[10-kitjet]])
-- [ ] Podman-контейнеры на rpinix
-- [ ] ZFS-репликация kitjet → rpinix
-- [ ] `sops-nix` для секретов в контейнерах
-
-[[00-Проект]] · [[10-kitjet]] · [[20-Бэкапы]] · [[21-ZFS-хранилище]]
+[[00-Проект]] · [[10-kitjet]] · [[12-rpinix-portable]] · [[30-Грабли]]
