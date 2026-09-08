@@ -43,6 +43,17 @@
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [ 22 ];
 
+  # ── Файловая система ───────────────────────────────────
+  # Ставится на /dev/nvme0n1 (238 ГБ NVMe на Pi5)
+  fileSystems."/" = {
+    device = "/dev/nvme0n1";
+    fsType = "btrfs";
+    options = [ "defaults" ];
+  };
+
+  # ── Отключить конфликтующий wireless ───────────────────
+  networking.wireless.enable = false;  # используем iwd из battery-optimization
+
   # Маркер формата данных. НЕ МЕНЯТЬ.
   system.stateVersion = "26.11";
 }
