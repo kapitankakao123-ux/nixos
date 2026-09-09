@@ -95,6 +95,45 @@
     "mmc_block"
   ];
 
+  # ── PCIe: без этого NVMe не существует ───────────────────
+  # Драйвер контроллера PCIe у Broadcom — МОДУЛЬ, а не встроенный.
+  # Проверено по System.map ядра 6.18.49: символов brcm_pcie там 0, тогда
+  # как pci_host_common и dw_pcie встроены (129 символов) — поэтому
+  # внутренний RP1 с USB и Ethernet поднимается, а внешний разъём нет.
+  # Пока модуля нет в initrd, шина не инициализируется вообще: в логе
+  # загрузки не было ни одной строки про PCIe, и nvme оказывался бесполезен.
+  # kernelModules, а не availableKernelModules — грузим принудительно.
+  boot.initrd.kernelModules = [ "pcie_brcmstb" ];
+
+  # Вторая половина той же проблемы: в mainline-DTB внешний разъём выключен.
+  #   pcie@1000100000  status = "disabled"   ← сюда воткнут NVMe
+  #   pcie@1000110000  status = "okay"
+  #   pcie@1000120000  status = "okay"       ← RP1: USB, Ethernet
+  # На Raspberry Pi OS его включают через dtparam=pciex1, но это применяет
+  # ПРОШИВКА к своему DTB. У нас U-Boot берёт DTB из дерева ядра (FDTDIR),
+  # мимо прошивки, поэтому включаем сами оверлеем.
+  # Проверено: сам узел полный — reg, ranges, dma-ranges, resets,
+  # прерывания на месте, мешает только status.
+  hardware.deviceTree = {
+    enable = true;
+    filter = "*bcm2712-rpi-5-b.dtb";
+    overlays = [
+      {
+        name = "pcie-external-enable";
+        dtsText = ''
+          /dts-v1/;
+          /plugin/;
+          / {
+            fragment@0 {
+              target-path = "/axi/pcie@1000100000";
+              __overlay__ { status = "okay"; };
+            };
+          };
+        '';
+      }
+    ];
+  };
+
   hardware.enableRedistributableFirmware = true;
 
   # ── Сеть ─────────────────────────────────────────────────
