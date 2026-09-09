@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/11-rpinix.md",
+                "file": "docs/Image/Фото логов загрузки.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "11-rpinix"
+              "title": "Фото логов загрузки"
             }
           }
         ]
@@ -209,8 +209,11 @@
   },
   "active": "e4d15a103435d899",
   "lastOpenFiles": [
-    "docs/13-rpinix-диагностика-загрузки.md",
+    "IMG_20260909_201318498.jpg",
     "docs/11-rpinix.md",
+    "docs/Image/Фото логов загрузки.md",
+    "docs/Image",
+    "docs/13-rpinix-диагностика-загрузки.md",
     "docs/sedyB2MZd",
     "docs/11-rpinix.md.new",
     "docs/11-rpinix.md.tmp.22714.7108f9e8198c",
@@ -223,7 +226,6 @@
     "docs/sedvqzbTg",
     "docs/sednPFKO4",
     "docs/sedvC5odd",
-    "CLAUDE.md.tmp.37001.56e1b5f6cdde",
     "docs/01-Репозиторий.md",
     "docs/30-Грабли.md",
     "docs/21-ZFS-хранилище.md",
