@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/Image/Фото логов загрузки.md",
+                "file": "docs/13-rpinix-диагностика-загрузки.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Фото логов загрузки"
+              "title": "13-rpinix-диагностика-загрузки"
             }
           }
         ]
@@ -209,9 +209,9 @@
   },
   "active": "e4d15a103435d899",
   "lastOpenFiles": [
+    "docs/Image/Фото логов загрузки.md",
     "IMG_20260909_201318498.jpg",
     "docs/11-rpinix.md",
-    "docs/Image/Фото логов загрузки.md",
     "docs/Image",
     "docs/13-rpinix-диагностика-загрузки.md",
     "docs/sedyB2MZd",
