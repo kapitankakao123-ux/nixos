@@ -2,7 +2,7 @@
 tags: [хост, rpinix, pi5, установка, гайд]
 ---
 
-# rpinix — установка NixOS на Raspberry Pi 5
+е# rpinix — установка NixOS на Raspberry Pi 5
 
 > **Этот файл переписан 2026-09-09.** Предыдущая версия содержала неверные
 > инструкции (`boot.loader.raspberryPi`, `hardware.raspberry-pi."5"`,
