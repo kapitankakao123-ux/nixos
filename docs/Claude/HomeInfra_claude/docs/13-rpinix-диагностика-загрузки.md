@@ -382,3 +382,77 @@ find /home/gadjet/nixos/.git -not -user gadjet    # должно быть пус
 ```
 
 Правило: `git` в этом репозитории **никогда** не запускать под sudo.
+
+---
+
+## Тупик U-Boot: он не умеет NVMe (2026-09-09, поздний вечер)
+
+Штатный образ записан на NVMe, SD вынута — на HDMI заставка и всё.
+Сети нет, Ctrl+Alt+F1..F4 не работают (их и не должно быть: до Linux
+дело не доходит).
+
+Причина найдена разбором самого бинаря `ubootRaspberryPiAarch64`
+(его можно скачать из кэша и смотреть прямо на kitjet, Pi не нужна):
+
+```bash
+nix build --no-link --print-out-paths --impure --expr \
+  '(builtins.getFlake "git+file:///home/gadjet/nixos").inputs.nixpkgs-unstable.legacyPackages.aarch64-linux.ubootRaspberryPiAarch64'
+tr -c '[:print:]' '\n' < <путь>/u-boot.bin | grep 'boot_targets='
+```
+
+Результат:
+
+```
+boot_targets=mmc usb pxe dhcp
+```
+
+**NVMe в списке нет.** U-Boot перебирает SD, USB, PXE, DHCP — и всё.
+Поэтому он стартует, ничего загрузочного не находит и останавливается.
+Сообщение об этом уходит в UART; на HDMI текст U-Boot не рендерится,
+видна только заставка прошивки.
+
+Переопределять `boot_targets` бессмысленно — драйвера тоже нет:
+
+| строка | вхождений |
+|---|---|
+| `nvme_scan`, `Identify`, `Namespace`, `nvme_` | **0** |
+| `pcie`, `brcmstb` | 11, 3 |
+
+Есть только имя команды `nvme` и PCIe-контроллер. Блочного драйвера NVMe
+в сборке нет.
+
+**Вывод: с NVMe этот U-Boot не грузится. `sd-image-aarch64` годится для
+SD-карты, но не для NVMe.**
+
+Это ровно то, о чём говорила документация `raspberry-pi-nix`:
+`uboot.enable = false` нужен «для менее типичных схем, например загрузки
+с NVMe». Тогда я это отбросил — зря.
+
+### Ошибочный совет про enable_uart
+
+Я предложил поменять `enable_uart=0` на `1` в секции `[pi5]`, чтобы «увидеть
+лог U-Boot на HDMI». Это неверно дважды: `enable_uart` управляет
+последовательным портом, а не выводом на HDMI, и апстрим ставит там `0`
+намеренно — чтобы U-Boot не ловил призрачный ввод с плавающего UART
+(bugzilla.opensuse.org, баг 1251192). **Вернуть обратно `enable_uart=0`.**
+
+### Остающийся путь: грузиться прошивкой напрямую, без U-Boot
+
+Родная схема Pi 5 для NVMe: EEPROM читает FAT-раздел и загружает ядро сам.
+
+```
+EEPROM (BOOT_ORDER=NVMe) → FIRMWARE (vfat) → config.txt
+   → kernel (Image) + initramfs + bcm2712-rpi-5-b.dtb → корень (ext4)
+```
+
+U-Boot в ней не участвует. Это то, что делал `raspberry-pi-nix`, и та
+попытка доходила до `EXT4-fs (nvme0n1p2): mounted filesystem r/w`, то есть
+**дальше U-Boot-проблемы она уже была**. Вставала на switch-root, но с
+вендорным ядром 6.6.51 и, что важно, с `console=serial0` последним в
+cmdline — то есть вывод stage-2 уходил в UART и мы его просто не видели.
+
+Теперь у нас mainline 6.18.49 и `console=tty0` последним. Проверить схему
+можно **вручную, без единой пересборки**: скопировать ядро и initrd из
+`/boot` на корне NVMe в FAT-раздел и написать свои `config.txt` и
+`cmdline.txt`. Если загрузится — оформить это в Nix через
+`sdImage.populateFirmwareCommands`.
