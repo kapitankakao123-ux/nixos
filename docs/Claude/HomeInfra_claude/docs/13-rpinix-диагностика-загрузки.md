@@ -284,3 +284,101 @@ sudo sed -i 's/console=tty1 console=serial0,115200n8/console=serial0,115200n8 co
 `sd-image-aarch64`. Он на этой плате доказанно грузится (это и есть live-SD),
 использует U-Boot, у которого есть поддержка NVMe, и его отладка идёт через
 внятный вывод U-Boot, а не через молчание.
+
+---
+
+## Развязка: Pi 5 поддержан в unstable, а не в 26.05 (2026-09-09, ночь)
+
+Сравнение `nixos/modules/installer/sd-card/sd-image-aarch64.nix` в двух ветках:
+
+| | nixos-26.05 | nixos-unstable |
+|---|---|---|
+| секции `[pi5]`, `[cm5]` | нет | **есть** |
+| `bcm2712-*.dtb` | не копируются | **копируются все 7** |
+| U-Boot | только `u-boot-rpi3.bin`, `u-boot-rpi4.bin` | **`ubootRaspberryPiAarch64` → `u-boot.bin`** |
+
+Это ровно то, что лежит на рабочей live-SD. То есть SD собрана из unstable,
+и **Pi 5 в nixpkgs поддержан штатно** — просто не в стабильной ветке.
+Обновление 26.05 не помогает: проверено, после `nix flake update nixpkgs`
+секции `[pi5]` там по-прежнему нет.
+
+`CLAUDE.md` с самого начала говорил «rpinix на nixpkgs-unstable», но
+`flake.nix` этого не делал — все хосты собирались из 26.05.
+
+### Что изменено
+
+`flake.nix`: хост может выбрать свою ветку nixpkgs.
+
+```nix
+mkHost = name: cfg:
+  let np = cfg.nixpkgs or nixpkgs;   # не указал — берётся основная
+  in np.lib.nixosSystem { ... };
+```
+
+```nix
+rpinix = {
+  system = "aarch64-linux";
+  home = null;
+  nixpkgs = inputs.nixpkgs-unstable;
+  extraModules = [
+    "${inputs.nixpkgs-unstable}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+  ];
+};
+```
+
+`raspberry-pi-nix` удалён из inputs целиком — вместе с его вендорным ядром,
+пином на январь 2025, отдельным кэшем и багом `tpm-crb`.
+
+`hosts/rpinix/default.nix`: убраны `raspberry-pi-nix.board` и
+`boot.initrd.systemd.tpm2.enable` (оба относились к вендорному ядру),
+добавлены разные метки разделов.
+
+### Метки разделов разведены
+
+По умолчанию **любой** NixOS sd-image получает `FIRMWARE`/`NIXOS_SD` и
+`firmwarePartitionID = 0x2178694e`, поэтому SD и NVMe неразличимы. Теперь:
+
+```nix
+sdImage = {
+  firmwarePartitionID = "0x52504958";   # не 0x2178694e
+  firmwarePartitionName = "RPINIXFW";   # метка FAT, максимум 11 символов
+  rootVolumeLabel = "RPINIX";           # вместо NIXOS_SD
+};
+```
+
+Теперь SD можно держать вставленной, не рискуя загрузиться не с того диска.
+
+### Побочный выигрыш: консоль
+
+Новый cmdline (проверено `nix eval`):
+
+```
+console=ttyS0,115200n8 console=ttyAMA0,115200n8 console=tty0 root=fstab loglevel=7 …
+```
+
+`console=tty0` стоит **последним**, а основным `/dev/console` становится
+именно последний. Значит вывод stage-2 пойдёт на HDMI, и прошлая проблема
+с невидимым логом не повторится.
+
+Ядро — **6.18.49** mainline, а не вендорное 6.6.51.
+
+## Грабли инфраструктуры: git под root
+
+`nix flake update` и любая сборка из рабочего репозитория падали с
+
+```
+error: insufficient permission for adding an object to repository database .git/objects
+fatal: cannot create an empty blob in the object database
+```
+
+Причина: каталог `.git/objects/e6/` и файл
+`e69de29bb2d1d6434b8b29ae775ad8c2e48c5391` принадлежали root. Это хеш
+**пустого блоба** в git — отсюда и формулировка про empty blob. Где-то git
+запускался через sudo.
+
+```bash
+sudo chown -R gadjet:users /home/gadjet/nixos/.git/objects/e6
+find /home/gadjet/nixos/.git -not -user gadjet    # должно быть пусто
+```
+
+Правило: `git` в этом репозитории **никогда** не запускать под sudo.

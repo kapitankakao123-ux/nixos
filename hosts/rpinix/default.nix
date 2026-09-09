@@ -1,14 +1,15 @@
 # hosts/rpinix — Raspberry Pi 5 (BCM2712), aarch64.
 #
-# ЭТАП 1: минимальная загружаемая система. Sway, контейнеры и оптимизация
+# ЭТАП 1: минимально загружаемая система. Sway, контейнеры и оптимизация
 # батареи намеренно отключены — сначала добиваемся загрузки с NVMe,
 # потом наращиваем по одному модулю. Разбор в docs/11-rpinix.md.
 #
-# Загрузка Pi 5 устроена не как на x86:
-#   EEPROM → раздел FIRMWARE (vfat) → config.txt → kernel.img напрямую.
-# U-Boot и extlinux здесь НЕ участвуют: ubootRaspberryPi5 в nixpkgs
-# не существует, а raspberry-pi-nix при uboot.enable = false (по умолчанию)
-# кладёт ядро прямо в раздел прошивки — это и есть штатный путь для NVMe.
+# Собирается из nixpkgs-unstable (см. flake.nix): только там sd-image-aarch64
+# знает про Pi 5. Схема загрузки — штатная для этого образа:
+#   EEPROM → раздел FIRMWARE (vfat) → config.txt → u-boot.bin
+#          → extlinux.conf на корне → ядро + initrd
+# Это ровно то, чем грузится live-система с SD, то есть путь проверен
+# на этом самом железе.
 { config, pkgs, lib, ... }:
 
 {
@@ -20,35 +21,24 @@
     # ../../modules/container.nix            # Podman
   ];
 
-  # ── Плата ────────────────────────────────────────────────
-  # bcm2712 = Pi 5 / Pi 500 / CM5. bcm2711 — это Pi 4.
-  raspberry-pi-nix.board = "bcm2712";
-
-  # kernel-version намеренно оставлен по умолчанию: под него собраны
-  # бинарники в nix-community.cachix.org. Поменяешь — будешь компилировать
-  # ядро на самой малине несколько часов.
-
-  # ── Дисплей: оверлей vc4 ─────────────────────────────────
-  # ПРОВЕРЕНО: переопределять оверлей здесь НЕ нужно.
-  # raspberry-pi-nix безусловно пишет dtoverlay=vc4-kms-v3d, и это выглядит
-  # как ошибка: generic .dtbo не содержит compatible на bcm2711/bcm2712,
-  # он для Pi 1-3. Но имя подменяет сама прошивка — в overlays/overlay_map.dtb
-  # есть правило vc4-kms-v3d -> vc4-kms-v3d-pi4 (bcm2711) / -pi5 (bcm2712),
-  # а каталог overlays/ копируется в раздел FIRMWARE целиком.
-  # Значит на Pi 5 фактически грузится vc4-kms-v3d-pi5. Не трогать.
-
   networking.hostName = "rpinix";
 
-  # ── TPM в initrd ─────────────────────────────────────────
-  # nixpkgs добавляет в initrd модули tpm-tis и tpm-crb для всего, кроме
-  # riscv64 и armv7 (nixos/modules/system/boot/systemd/tpm2.nix). aarch64 под
-  # исключение не попадает, а вендорное ядро Raspberry Pi модуль tpm-crb не
-  # собирает → сборка initrd падает на "modprobe: FATAL: Module tpm-crb not found".
-  # На Pi 5 TPM нет физически, так что просто выключаем.
-  boot.initrd.systemd.tpm2.enable = false;
+  # ── Метки и ID разделов ──────────────────────────────────
+  # По умолчанию sd-image даёт ВСЕМ образам одинаковые метки (FIRMWARE,
+  # NIXOS_SD) и одинаковый firmwarePartitionID (0x2178694e). Из-за этого
+  # SD-карта и NVMe становятся неразличимы: root=PARTUUID=…-02 и
+  # /dev/disk/by-label/NIXOS_SD указывают неизвестно на какой из дисков,
+  # если вставлены оба. Проверено на живой машине 2026-09-09.
+  # Разводим их явно, чтобы SD можно было держать вставленной.
+  sdImage = {
+    firmwarePartitionID = "0x52504958";   # "RPIX" в ASCII, лишь бы не 0x2178694e
+    firmwarePartitionName = "RPINIXFW";   # метка FAT, максимум 11 символов
+    rootVolumeLabel = "RPINIX";           # вместо NIXOS_SD
+  };
 
   # hardware-configuration.nix здесь НЕ импортируется и fileSystems не
-  # задаются: разметку (FIRMWARE + NIXOS_SD) описывает модуль sd-image.
+  # задаются: разметку описывает модуль sd-image, а корень и /boot/firmware
+  # он подставляет сам из меток выше.
 
   # ── Сеть ─────────────────────────────────────────────────
   services.openssh = {
@@ -66,6 +56,6 @@
   # Пароль на первую загрузку. Сменить сразу после входа: passwd
   users.users.gadjet.initialPassword = "1414";
 
-  # Совпадает с веткой nixpkgs, на которой собирается этот flake (26.05).
+  # Не меняется никогда, даже при переходе на другую ветку nixpkgs.
   system.stateVersion = "26.05";
 }

@@ -8,7 +8,11 @@
   inputs = {
     # Основной репозиторий пакетов. nixos-26.05 — стабильная ветка.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-    # Нужен для отдельных свежих пакетов (pkgs.unstable.*) и для rpinix.
+    # Нужен для отдельных свежих пакетов (pkgs.unstable.*) и ЦЕЛИКОМ для rpinix.
+    # Поддержка Pi 5 в installer/sd-card/sd-image-aarch64.nix есть ТОЛЬКО здесь:
+    # секции [pi5]/[cm5] в config.txt, bcm2712-*.dtb и общий u-boot.bin
+    # (ubootRaspberryPiAarch64). В ветке 26.05 всего этого нет — проверено
+    # по исходникам обеих веток 2026-09-09.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Home Manager — управление ~/ (дотфайлы, пользовательские пакеты).
@@ -32,13 +36,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Raspberry Pi 5. В самом nixpkgs Pi 5 не собирается:
-    # ubootRaspberryPi5 нет, а config.txt в sd-image-aarch64 не имеет [pi5].
-    # Этот флейк даёт вендорное ядро (bcm2712), прошивку и раздел FIRMWARE.
-    # ВАЖНО: follows здесь НЕ ставим. У флейка свой пин nixpkgs, под который
-    # собраны ядра в nix-community.cachix.org. Переопределим — промахнёмся
-    # мимо кэша и будем компилировать ядро на самой малине.
-    raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
+    # raspberry-pi-nix УБРАН 2026-09-09. Брали его из-за двух утверждений,
+    # которые оказались неверны для свежего nixpkgs: якобы нет U-Boot для Pi 5
+    # и якобы sd-image-aarch64 не знает про Pi 5. И то и другое есть в unstable.
+    # Вдобавок его вендорное ядро запинено на nixpkgs января 2025, тянется из
+    # отдельного кэша и стоило нам бага с tpm-crb. Разбор — docs/13-*.md.
   };
 
   # ─────────────────────────────────────────────────────────────
@@ -57,43 +59,53 @@
         rpinix = {
           system = "aarch64-linux";
           home = null;   # Pi5 — пока без home-manager
-          # Модули из внешних флейков. Для Pi 5 нужны оба:
-          # raspberry-pi — вендорное ядро bcm2712 + прошивка + config.txt,
-          # sd-image     — сборка образа с готовым разделом FIRMWARE.
+
+          # Весь хост собирается из unstable, а не из 26.05. Причина — выше,
+          # в комментарии к nixpkgs-unstable: только там sd-image-aarch64
+          # умеет Pi 5. Home Manager сюда не подключается (home = null),
+          # поэтому расхождение веток 26.05 ↔ unstable ничего не ломает.
+          nixpkgs = inputs.nixpkgs-unstable;
+
+          # Штатный сборщик образа из nixpkgs. Он же даёт U-Boot + extlinux,
+          # разметку FIRMWARE + корень и расширение корня на первой загрузке.
           extraModules = [
-            inputs.raspberry-pi-nix.nixosModules.raspberry-pi
-            inputs.raspberry-pi-nix.nixosModules.sd-image
+            "${inputs.nixpkgs-unstable}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
           ];
         };
         # gadnix = { system = "x86_64-linux"; home = ./home/gadnix.nix; };
       };
 
       # Сборка одной системы из описания выше.
-      mkHost = name: cfg: nixpkgs.lib.nixosSystem {
-        inherit (cfg) system;
+      mkHost = name: cfg:
+        let
+          # Хост может выбрать свою ветку nixpkgs. Не указал — берётся основная.
+          np = cfg.nixpkgs or nixpkgs;
+        in
+        np.lib.nixosSystem {
+          inherit (cfg) system;
 
-        # Прокидываем inputs внутрь модулей, чтобы там были доступны
-        # inputs.dms и т.п. Без этого модули о flake ничего не знают.
-        specialArgs = { inherit inputs; };
+          # Прокидываем inputs внутрь модулей, чтобы там были доступны
+          # inputs.dms и т.п. Без этого модули о flake ничего не знают.
+          specialArgs = { inherit inputs; };
 
-        # modules — список кусков конфигурации, они СЛИВАЮТСЯ в один
-        # атрибут-сет. Порядок не важен, важна уникальность присваиваний.
-        modules = [
-          ./hosts/${name}
-        ] ++ (cfg.extraModules or [ ]) ++ (
-          # Home Manager только если cfg.home != null (есть пользовательское окружение)
-          if cfg.home != null then [
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
-              home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
-              home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
-              home-manager.extraSpecialArgs = { inherit inputs; };
-              home-manager.users.gadjet = cfg.home;
-            }
-          ] else []
-        );
-      };
+          # modules — список кусков конфигурации, они СЛИВАЮТСЯ в один
+          # атрибут-сет. Порядок не важен, важна уникальность присваиваний.
+          modules = [
+            ./hosts/${name}
+          ] ++ (cfg.extraModules or [ ]) ++ (
+            # Home Manager только если cfg.home != null (есть пользовательское окружение)
+            if cfg.home != null then [
+              home-manager.nixosModules.home-manager
+              {
+                home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
+                home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
+                home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
+                home-manager.extraSpecialArgs = { inherit inputs; };
+                home-manager.users.gadjet = cfg.home;
+              }
+            ] else []
+          );
+        };
     in
     {
       nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;
