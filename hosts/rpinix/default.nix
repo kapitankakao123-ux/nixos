@@ -64,6 +64,22 @@
   boot.loader.grub.enable = false;
   boot.loader.generic-extlinux-compatible.enable = true;
 
+  # ── Консоль ──────────────────────────────────────────────
+  # ОБЯЗАТЕЛЬНО. Раньше эти параметры приходили из модуля sd-image-aarch64;
+  # он убран — и вместе с ним пропали все console=. Без них ядро берёт
+  # консоль из device tree (chosen/stdout-path), а это UART, который на
+  # Pi 5 выключен в config.txt ([pi5] enable_uart=0). Итог: на HDMI не
+  # появляется ни одной строки, экран остаётся на логотипе U-Boot.
+  #
+  # Порядок важен: основным /dev/console становится ПОСЛЕДНИЙ в списке,
+  # поэтому tty0 стоит в конце — вывод пойдёт на HDMI. Ровно тот же набор
+  # у рабочего live-образа, сверено построчно.
+  boot.kernelParams = [
+    "console=ttyS0,115200n8"
+    "console=ttyAMA0,115200n8"
+    "console=tty0"
+  ];
+
   # Корень на NVMe, значит initrd обязан уметь его увидеть.
   # Без "nvme" система встанет на поиске корня.
   boot.initrd.availableKernelModules = [

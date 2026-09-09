@@ -53,7 +53,8 @@
     pkgs.unstable.claude-code                        # свежий, из unstable
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
     vscode
-    gnome-disk-utility        
+    gnome-disk-utility
+    google-chrome        
 
     # ── Dolphin ───────────────────────────────────────────────
     # Файловый менеджер из KDE. Он здесь, а не в системе: обычное
