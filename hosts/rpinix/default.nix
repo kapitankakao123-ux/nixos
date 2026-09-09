@@ -120,10 +120,18 @@
     overlays = [
       {
         name = "pcie-external-enable";
+        # compatible в корне ОБЯЗАТЕЛЕН. apply_overlays.py из nixpkgs
+        # молча пропускает оверлей, если корневой compatible не пересекается
+        # с compatible целевого DTB:
+        #   elif not overlay.compatible.intersection(dt_compatible): continue
+        # Без него оверлей отбрасывается без единого сообщения об ошибке —
+        # проверять надо fdtget по собранному DTB, а не по факту сборки.
+        # Целевой DTB объявляет: "raspberrypi,5-model-b", "brcm,bcm2712".
         dtsText = ''
           /dts-v1/;
           /plugin/;
           / {
+            compatible = "brcm,bcm2712";
             fragment@0 {
               target-path = "/axi/pcie@1000100000";
               __overlay__ { status = "okay"; };
