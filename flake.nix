@@ -60,17 +60,17 @@
           system = "aarch64-linux";
           home = null;   # Pi5 — пока без home-manager
 
-          # Весь хост собирается из unstable, а не из 26.05. Причина — выше,
-          # в комментарии к nixpkgs-unstable: только там sd-image-aarch64
-          # умеет Pi 5. Home Manager сюда не подключается (home = null),
-          # поэтому расхождение веток 26.05 ↔ unstable ничего не ломает.
+          # Весь хост собирается из unstable, а не из 26.05: только там есть
+          # поддержка Pi 5 (ядро с bcm2712, dtb, u-boot для aarch64).
+          # Home Manager сюда не подключается (home = null), поэтому
+          # расхождение веток 26.05 ↔ unstable ничего не ломает.
           nixpkgs = inputs.nixpkgs-unstable;
 
-          # Штатный сборщик образа из nixpkgs. Он же даёт U-Boot + extlinux,
-          # разметку FIRMWARE + корень и расширение корня на первой загрузке.
-          extraModules = [
-            "${inputs.nixpkgs-unstable}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-          ];
+          # sd-image БОЛЬШЕ НЕ ПОДКЛЮЧАЕТСЯ. Это обычная установка на диск,
+          # а не сборка образа: разметку и загрузчик описывает сам хост.
+          # Причина отказа от образа — U-Boot не умеет грузиться с NVMe
+          # (boot_targets=mmc usb pxe dhcp, драйвера нет), поэтому /boot
+          # живёт на SD, а корень на NVMe. Разбор — docs/13-*.md.
         };
         # gadnix = { system = "x86_64-linux"; home = ./home/gadnix.nix; };
       };
