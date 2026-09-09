@@ -134,3 +134,71 @@ nix eval --json .#nixosConfigurations.rpinix.config.boot.kernelParams
 ```
 
 [[11-rpinix]] · [[12-rpinix-portable]] · [[30-Грабли]]
+
+---
+
+## Осмотр живой машины 2026-09-09 (по SSH с kitjet)
+
+Подключение: `sshpass -p 1414 ssh nixos@192.168.10.157` (live-система с SD).
+
+### Факт 1. Корень на NVMe никогда не загружался
+
+```
+/mnt/nvme/  →  lost+found  nix/  nix-path-registration  run/  sbin/
+```
+
+Ни `/etc`, ни `/var`, ни `/home`. Это **ровно то**, что кладёт сборщик образа:
+закрытие nix-стора плюс `/sbin/init`. Каталоги `/etc` и `/var` создаёт активация
+на первой загрузке (stage-2). Их отсутствие означает, что stage-2 не отработал
+ни разу — останов в initrd или на переходе к нему. Раздел так и остался 4.7 ГБ
+вместо 238, `expand-root-partition` тоже не запускался.
+
+`/sbin/init` при этом целый — не симлинк, а скрипт:
+
+```
+#!/nix/store/…-bash-interactive-5.3p9/bin/bash
+exec /nix/store/…-nixos-system-rpinix-26.05.20260905.6713828/init
+```
+
+Раздел FIRMWARE тоже в порядке: `kernel.img` 35 МБ, `initrd` 22 МБ,
+`bcm2712-rpi-5-b.dtb` на месте, занято 79 МБ из 128 — обрезания не было.
+
+### Факт 2. SD и NVMe неразличимы для загрузчика
+
+```
+mmcblk0p1  FIRMWARE  2178694e-01      nvme0n1p1  FIRMWARE  2178694e-01
+mmcblk0p2  NIXOS_SD  2178694e-02      nvme0n1p2  NIXOS_SD  2178694e-02
+```
+
+Одинаковые метки И одинаковые PARTUUID. Причина: `sdImage.firmwarePartitionID`
+в модуле — константа (`0x2178694e`), поэтому её получает **любой** NixOS
+sd-image. А в `cmdline.txt` стоит `root=PARTUUID=2178694e-02`.
+
+Пока SD вынута — однозначно. Но с обеими вставленными `root=PARTUUID=…` и
+`/dev/disk/by-label/NIXOS_SD` указывают неизвестно куда, и это мина.
+Лечится заданием своего `sdImage.firmwarePartitionID` для rpinix.
+
+### Факт 3. Стандартный образ nixpkgs на этой плате грузится
+
+Live-система на SD — обычный `sd-image-aarch64` из 26.05, ядро **7.2.4**.
+Её `config.txt` начинается с `kernel=u-boot.bin`, в разделе лежит
+`u-boot.bin` (943 КБ) и `armstub8-gic.bin`, а `kernel.img`/`initrd`/`cmdline.txt`
+там **нет вообще** — ядро ищет U-Boot через `extlinux.conf` на корне.
+
+В этом `u-boot.bin` есть команда `nvme` и 11 ссылок на PCIe, то есть загрузка
+с NVMe для него в принципе доступна.
+
+Отсюда следует пересмотр: `raspberry-pi-nix` мы взяли из-за утверждений,
+которые в 26.05 уже неверны. См. исправленный раздел в [[11-rpinix]].
+
+### Что сделано для следующей загрузки
+
+На NVMe в `config.txt` закомментирован KMS (бэкап — `config.txt.bak`):
+
+```
+#dtoverlay=vc4-kms-v3d
+```
+
+Без KMS консоль остаётся на firmware-framebuffer, и HDMI должен печатать
+сообщения до самого конца, а не замирать на `vc4-drm … bcm2712_iommu_of_xlate`.
+Это отвечает на вопрос, зависание там или просто потеря консоли.
