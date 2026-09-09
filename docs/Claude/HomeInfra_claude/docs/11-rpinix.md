@@ -2,40 +2,41 @@
 tags: [хост, rpinix, pi5, установка, гайд]
 ---
 
-# rpinix — установка NixOS на Raspberry Pi 5
+# rpinix — NixOS на Raspberry Pi 5
 
-> **Переписан 2026-09-09 (второй раз).** Предыдущая версия вела через флейк
-> `raspberry-pi-nix`. Это оказалось лишним: Pi 5 поддержан в nixpkgs штатно,
-> просто не в стабильной ветке. Разбор — [[13-rpinix-диагностика-загрузки]].
+> **Статус: РАБОТАЕТ** (2026-09-10). Корень на NVMe, загрузка с SD,
+> ядро 6.18.49 mainline, NixOS 26.11. История отладки — [[13-rpinix-диагностика-загрузки]].
 
-## Главное в одну строку
+## Итоговая схема
 
-**Pi 5 работает на стандартном `sd-image-aarch64`, но только из
-`nixpkgs-unstable`. В ветке 26.05 поддержки нет.**
+```
+EEPROM → SD p1 (vfat, FIRMWARE) → config.txt → u-boot.bin
+       → U-Boot читает /extlinux/extlinux.conf на SD p2 (ext4)
+       → ядро + initrd + DTB оттуда же
+       → initrd поднимает PCIe, находит корень на NVMe
+```
 
-Сравнение `nixos/modules/installer/sd-card/sd-image-aarch64.nix`:
-
-| | nixos-26.05 | nixos-unstable |
+| Раздел | Метка | Роль |
 |---|---|---|
-| секции `[pi5]`, `[cm5]` | нет | **есть** |
-| `bcm2712-*.dtb` | не копируются | **все 7** |
-| U-Boot | `u-boot-rpi3.bin`, `u-boot-rpi4.bin` | **`ubootRaspberryPiAarch64` → `u-boot.bin`** |
+| `mmcblk0p1` (30 МБ, vfat) | `FIRMWARE` | `/boot/firmware` — прошивка Pi + `u-boot.bin` |
+| `mmcblk0p2` (58 ГБ, ext4) | `NIXOS_SD` | `/boot` — extlinux, ядро, initrd, DTB |
+| `nvme0n1p1` (238 ГБ, ext4) | `RPINIXROOT` | `/` — вся система |
 
-Обновление 26.05 не помогает — проверено.
+**SD обязана оставаться в слоте.** U-Boot из nixpkgs не умеет NVMe, поэтому
+ядро лежит на карте. Записей на `/boot` почти нет — износ несущественный.
 
-## Как грузится Pi 5
+Плюс схемы: `nixos-rebuild` работает штатно, ядро и initrd на `/boot`
+обновляет сам `generic-extlinux-compatible`. Никакой ручной синхронизации.
 
-```
-EEPROM (BOOT_ORDER) → раздел FIRMWARE (vfat) → config.txt → u-boot.bin
-   → U-Boot читает /boot/extlinux/extlinux.conf на корне (ext4)
-   → ядро + initrd + dtb
-```
+## Три вещи, без которых не грузится
 
-Корень обязан быть **ext4**: U-Boot читает с него `extlinux.conf`.
+Каждая ловила нас отдельно, порядок важен.
 
-## Конфиг
+### 1. Ветка nixpkgs — только unstable
 
-Хост собирается из другой ветки, чем остальные. Во `flake.nix` это сделано так:
+В `nixos-26.05` нет поддержки Pi 5 в `sd-image-aarch64.nix`: ни секций
+`[pi5]`/`[cm5]`, ни `bcm2712-*.dtb`, ни общего `u-boot.bin`. Обновление 26.05
+не помогает. Во `flake.nix` хост берёт свою ветку:
 
 ```nix
 mkHost = name: cfg:
@@ -44,52 +45,90 @@ mkHost = name: cfg:
 ```
 
 ```nix
-rpinix = {
-  system = "aarch64-linux";
-  home = null;                       # пока без home-manager
-  nixpkgs = inputs.nixpkgs-unstable; # ТОЛЬКО здесь есть Pi 5
-  extraModules = [
-    "${inputs.nixpkgs-unstable}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-  ];
-};
+rpinix = { system = "aarch64-linux"; home = null; nixpkgs = inputs.nixpkgs-unstable; };
 ```
 
-`hosts/rpinix/default.nix` — этап 1, минимально загружаемая система. Чего в нём
-намеренно **нет**: `hardware-configuration.nix`, `fileSystems`,
-`boot.kernelPackages`, `boot.loader.*` — всё это задаёт модуль `sd-image`.
+### 2. Параметры console
 
-### Метки разделов обязательно свои
-
-По умолчанию **любой** NixOS sd-image получает `FIRMWARE`/`NIXOS_SD` и
-`firmwarePartitionID = 0x2178694e`. Поэтому SD-карта и NVMe становятся
-неразличимы, а `root=` и `by-label` указывают неизвестно куда:
+Без них ядро берёт консоль из device tree (`chosen/stdout-path`), а это UART,
+выключенный на Pi 5 (`[pi5] enable_uart=0`). На HDMI не появляется **ни одной
+строки** — выглядит как зависание U-Boot.
 
 ```nix
-sdImage = {
-  firmwarePartitionID = "0x52504958";   # не 0x2178694e
-  firmwarePartitionName = "RPINIXFW";   # метка FAT, максимум 11 символов
-  rootVolumeLabel = "RPINIX";           # вместо NIXOS_SD
+boot.kernelParams = [ "console=ttyS0,115200n8" "console=ttyAMA0,115200n8" "console=tty0" ];
+boot.consoleLogLevel = 7;
+```
+
+`tty0` **последним**: основным `/dev/console` становится последний в списке.
+
+### 3. PCIe — две независимые правки
+
+Драйвер контроллера PCIe у Broadcom — **модуль**, не встроенный. Проверка:
+
+```bash
+grep -c brcm_pcie <ядро>/System.map     # 0  → модуль
+grep -c dw_pcie   <ядро>/System.map     # 129 → встроен
+```
+
+Поэтому внутренний RP1 (USB, Ethernet) работает, а внешний разъём — нет.
+
+```nix
+boot.initrd.kernelModules = [ "pcie_brcmstb" ];
+```
+
+И вдобавок в mainline-DTB внешний разъём выключен:
+
+```
+pcie@1000100000  status = "disabled"   ← сюда воткнут NVMe
+pcie@1000110000  status = "okay"
+pcie@1000120000  status = "okay"       ← RP1
+```
+
+На Raspberry Pi OS его включает `dtparam=pciex1`, но это применяет **прошивка**
+к своему DTB, а U-Boot берёт наш — из дерева ядра через `FDTDIR`. Включаем сами:
+
+```nix
+hardware.deviceTree = {
+  enable = true;
+  filter = "*bcm2712-rpi-5-b.dtb";
+  overlays = [{
+    name = "pcie-external-enable";
+    dtsText = ''
+      /dts-v1/;
+      /plugin/;
+      / {
+        compatible = "brcm,bcm2712";
+        fragment@0 {
+          target-path = "/axi/pcie@1000100000";
+          __overlay__ { status = "okay"; };
+        };
+      };
+    '';
+  }];
 };
 ```
 
-С этим SD можно держать вставленной.
+**`compatible` в корне оверлея обязателен.** `apply_overlays.py` из nixpkgs
+молча пропускает оверлей, если корневой `compatible` не пересекается с
+`compatible` целевого DTB. Успешная сборка **не значит**, что оверлей применён.
 
-## Порядок установки
+## Установка с нуля
 
-### 1. Проверить вычисление (секунды вместо часов)
+### 1. Подготовить диски (из live-системы с SD)
 
 ```bash
-cd ~/nixos
-nix eval --raw .#nixosConfigurations.rpinix.config.system.build.sdImage.drvPath
+sudo wipefs -a /dev/nvme0n1
+sudo parted -s /dev/nvme0n1 mklabel gpt mkpart primary ext4 1MiB 100%
+sudo partprobe /dev/nvme0n1
+sudo mkfs.ext4 -L RPINIXROOT -F /dev/nvme0n1p1
 ```
 
-Должен вернуться путь `.drv`. Ловит конфликты опций мгновенно — в отличие от
-`nix flake show`, который модули не разворачивает.
+SD берётся готовая — записанный штатный `sd-image-aarch64` из unstable.
+Её раздел прошивки уже содержит `u-boot.bin` и все `bcm2712-*.dtb`.
 
-### 2. Доставить конфиг на Pi
+### 2. Доставить конфиг
 
-Если git на Pi нет (в live-системе с SD его нет), каталог без `.git` тоже
-годится: nix воспримет его как path-флейк.
+Git на live-системе нет. Каталог без `.git` nix принимает как path-флейк:
 
 ```bash
 cd ~/nixos
@@ -97,89 +136,71 @@ tar -c --exclude=.git --exclude=docs . | ssh nixos@<ip> \
   'rm -rf /tmp/nixos-new && mkdir -p /tmp/nixos-new && tar -x -C /tmp/nixos-new'
 ```
 
-### 3. Собрать образ на Pi
+### 3. Смонтировать и установить
 
-Cachix больше не нужен — всё берётся из официального `cache.nixos.org`.
-Команда **одной строкой**: обратные слэши при вставке рвутся, и `nix` принимает
-`build` за имя флейка (`error: cannot find flake 'flake:build'`).
+`/boot` — это корень раздела SD, поэтому bind-монтируем `/` живой системы:
 
 ```bash
-cd /tmp/nixos-new && nix --extra-experimental-features 'nix-command flakes' build .#nixosConfigurations.rpinix.config.system.build.sdImage
+sudo mount /dev/disk/by-label/RPINIXROOT /mnt
+sudo mkdir -p /mnt/boot
+sudo mount --bind / /mnt/boot
+sudo NIX_CONFIG="experimental-features = nix-command flakes" \
+  nixos-install --flake /tmp/nixos-new#rpinix --root /mnt --no-root-password
 ```
 
-`--extra-experimental-features` обязателен: в live-системе флейки выключены.
+Установщик кладёт `extlinux.conf` в **корень** раздела SD (`/extlinux/`).
+Конфиг live-системы остаётся уровнем ниже (`/boot/extlinux/`) — U-Boot ищет
+`/extlinux/` раньше, поэтому выигрывает наш, а live остаётся запасным.
 
-Реально занимает минуты — компилируется только образ, пакеты приходят готовыми.
-
-### 4. Записать на NVMe
+### 4. Проверить ДО перезагрузки
 
 ```bash
-for m in /mnt/nvme /mnt/fw; do while mountpoint -q $m; do sudo umount $m; done; done
-zstdcat result/sd-image/*.img.zst | sudo dd of=/dev/nvme0n1 bs=4M status=progress conv=fsync
-sync
+# оверлей реально применён?
+fdtget /mnt/boot/nixos/*device-tree-overlays/broadcom/bcm2712-rpi-5-b.dtb \
+  /axi/pcie@1000100000 status          # ждём: okay
+
+# модуль контроллера в initrd?
+zstdcat /mnt/boot/nixos/*initrd | cpio -t | grep pcie-brcmstb
+
+# console в cmdline?
+grep -o 'console=[^ ]*' /mnt/boot/extlinux/extlinux.conf
 ```
 
-`sudo` нужен именно на `dd`. Разметку руками делать не надо — она внутри образа.
+### 5. Загрузиться
 
-### 5. Проверить перед перезагрузкой
+SD и NVMe обе на месте. Вход: `gadjet` / `1414`.
+
+## Откат к live-системе
+
+Если наш конфиг не грузится, а нужен доступ — вставить SD в другую машину и:
 
 ```bash
-lsblk -o NAME,SIZE,LABEL,PARTUUID,FSTYPE
+sudo mv /run/media/$USER/NIXOS_SD/extlinux /run/media/$USER/NIXOS_SD/extlinux.off
 ```
 
-Ожидается `RPINIXFW`/`RPINIX` на nvme и `FIRMWARE`/`NIXOS_SD` на SD — разные.
+U-Boot не найдёт `/extlinux/`, спустится к `/boot/extlinux/` и загрузит live.
+Вернуть — переименовать обратно.
 
-```bash
-sudo mount /dev/nvme0n1p1 /mnt/fw && ls /mnt/fw | grep -E 'u-boot|bcm2712-rpi-5'
-```
+## Что не работает
 
-Должны быть `u-boot.bin` и `bcm2712-rpi-5-b.dtb`.
-
-### 6. Загрузиться
-
-**Вынуть SD** — иначе EEPROM по BOOT_ORDER уйдёт грузиться с неё.
-
-Корень растянется на все 238 ГБ сам (`sdImage.expandOnBoot`).
-Вход: `gadjet` / `1414`. **Сменить сразу:** `passwd`.
-
-### 7. Дальше — по одному модулю
-
-Раскомментировать в `hosts/rpinix/default.nix` по одному, пересобирая каждый раз:
-
-- `modules/desktop-light.nix` — Sway на 7" DSI
-- `modules/battery-optimization.nix` — питание (проверить `tlp` на ARM)
-- `modules/container.nix` — Podman
+- **DSI-дисплей.** В mainline-DTB для bcm2712 **ноль** узлов `dsi`/`mipi`.
+  Разбор и варианты — [[12-rpinix-portable]].
+- **`nixos-rebuild` требует SD в слоте** — иначе `/boot` не смонтируется.
 
 ## Тупики (чтобы не повторять)
 
 | Что пробовали | Чем кончилось |
 | --- | --- |
-| `boot.loader.raspberryPi.version = 5` | опция удалена из nixpkgs, вычисление падает |
+| `boot.loader.raspberryPi.version = 5` | опция удалена из nixpkgs |
 | `hardware.raspberry-pi."5"` | опции нет в nixpkgs, она из `nixos-hardware` |
-| sd-image из **26.05** + `nixos-install` на NVMe | прошивка пуста → `GPT: no bootable partitions` |
-| корень btrfs на NVMe | нужен ext4: с него U-Boot читает `extlinux.conf` |
-| разметка руками (`parted` + `mkfs.fat`) | дело не в разметке, а в содержимом FAT |
-| `root=/dev/nvme0n1` в `kernelParams` | выдумано, к делу отношения не имеет |
-| флейк `raspberry-pi-nix` | грузился до switch-root и молча вставал; вендорное ядро 6.6.51, пин nixpkgs на январь 2025, отдельный кэш, баг `tpm-crb` |
+| sd-image из **26.05** | нет поддержки Pi 5, см. выше |
+| `nixos-install` на чистый NVMe | раздел прошивки пуст → `GPT: no bootable partitions` |
+| корень btrfs | нужен ext4 |
+| флейк `raspberry-pi-nix` | вендорное ядро 6.6.51, пин nixpkgs на январь 2025, свой кэш, баг `tpm-crb`; вставал на switch-root |
+| загрузка ядра прошивкой напрямую, без U-Boot | чёрный экран, без UART не диагностируется |
+| **загрузка с NVMe через U-Boot** | `boot_targets=mmc usb pxe dhcp`, драйвера NVMe в сборке нет |
 
 `nix flake show` показывает, что конфигурация *объявлена*, но модули не
 разворачивает. Проверять надо `nix eval …config.system.build.<цель>.drvPath`.
-
-## Исторические ошибки сборки
-
-Обе относятся к `raspberry-pi-nix` и после перехода на штатный образ
-неактуальны. Оставлено на случай возврата.
-
-### `modprobe: FATAL: Module tpm-crb not found`
-
-`nixos/modules/system/boot/systemd/tpm2.nix` добавляет в initrd `tpm-tis` и
-`tpm-crb` для всего, кроме riscv64 и armv7. aarch64 под исключение не попадает,
-а вендорное ядро Pi этот модуль не собирает. Лечилось
-`boot.initrd.systemd.tpm2.enable = false`. На mainline-ядре 6.18 не возникает.
-
-### `error: cannot find flake 'flake:build'`
-
-Не ошибка nix, а порванная при вставке строка: слэши потерялись, `build` уехал
-в аргументы. Команду сборки копировать одной строкой.
 
 [[00-Проект]] · [[10-kitjet]] · [[12-rpinix-portable]] · [[13-rpinix-диагностика-загрузки]] · [[30-Грабли]]

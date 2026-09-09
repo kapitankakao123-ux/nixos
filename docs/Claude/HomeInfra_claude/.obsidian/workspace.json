@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/Image/Фото логов загрузки.md",
+                "file": "docs/13-rpinix-диагностика-загрузки.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Фото логов загрузки"
+              "title": "13-rpinix-диагностика-загрузки"
             }
           }
         ]
@@ -209,12 +209,19 @@
   },
   "active": "e4d15a103435d899",
   "lastOpenFiles": [
+    "docs/sed02mj3C",
+    "sed9oVeRR",
+    "docs/Image/Фото логов загрузки.md",
+    "docs/Image/2026-09-10-ожидание-RPINIXROOT-3.jpg",
+    "docs/Image/2026-09-10-ожидание-RPINIXROOT-51s.jpg",
+    "docs/Image/2026-09-10-ожидание-RPINIXROOT-40s.jpg",
+    "docs/Image/2026-09-10-emergency-mode-нет-RPINIXROOT.jpg",
+    "docs/Image/2026-09-09-vc4-drm-замирание.jpg",
     "IMG_20260910_001614842.jpg",
     "IMG_20260910_001527768.jpg",
     "IMG_20260910_001523221.jpg",
     "IMG_20260910_000234436.jpg",
     "docs/13-rpinix-диагностика-загрузки.md",
-    "docs/Image/Фото логов загрузки.md",
     "IMG_20260909_201318498.jpg",
     "docs/11-rpinix.md",
     "docs/Image",
@@ -229,7 +236,6 @@
     "CLAUDE.md.tmp.37692.c327cc527f65",
     "docs/sedvqzbTg",
     "docs/sednPFKO4",
-    "docs/sedvC5odd",
     "docs/01-Репозиторий.md",
     "docs/30-Грабли.md",
     "docs/21-ZFS-хранилище.md",

@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | `kitjet` | x86_64 | **работает** | домашний сервер: ZFS-хранилище (tank), libvirt/KVM, Jellyfin, HAOS (виртуалка), рабочее место | niri + DMS |
 | `gadnix` | x86_64 | под переустановку | ПК: игры, браузер, работа (RDP, WinBox, LibreOffice, VS Code) | niri + DMS |
-| `rpinix` | aarch64 | **NixOS, в разработке** | Raspberry Pi 5 портативное: 7" DSI-дисплей, Sway, батареи, контейнеры | Sway (Wayland) |
+| `rpinix` | aarch64 | **работает** — корень на NVMe, загрузка с SD | Raspberry Pi 5: контейнеры, реплики. DSI пока не работает (нет в mainline) | пока нет, HDMI |
 
 Пользователь везде `gadjet`. `kitjet` и `gadnix` на стабильной ветке nixpkgs 26.05; `rpinix` на `nixpkgs-unstable` (aarch64+Pi5 требуют свежего ядра).
 
