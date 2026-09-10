@@ -4,6 +4,9 @@ tags: [хост, pintu, pi5, ubuntu, установка, гайд]
 
 # pintu — Raspberry Pi 5 на Ubuntu
 
+> **Статус: РАБОТАЕТ** (2026-09-10). Ubuntu 26.04.1 на NVMe, GNOME на 7" DSI,
+> Firefox, Incus. Установка и все ловушки — ниже.
+>
 > **Решение 2026-09-10.** NixOS на Pi 5 работает, но без DSI (в mainline
 > нет кода DSI для bcm2712, см. [[12-rpinix-portable]]). Для портативного
 > сценария это блокер, поэтому Pi 5 пока на Ubuntu. kitjet и gadnix — NixOS.
@@ -167,6 +170,105 @@ fstab:    LABEL=writable  /   и   LABEL=system-boot  /boot/firmware
 ### 6. Загрузиться
 
 Корень растянется на весь диск при первой загрузке сам (cloud-init).
+
+## Ловушка: пустые индексы apt в образе
+
+Первая попытка `apt install ubuntu-desktop-minimal` упала на зависимостях:
+
+```
+gstreamer1.0-packagekit Depends packagekit (= 1.3.4-3)
+  but none of the choices are installable
+```
+
+Выглядело как рассинхрон архива: установлен `packagekit 1.3.4-3ubuntu1.2`,
+а apt видит только `1.3.4-3` из `resolute/main`. Следом тем же упал
+`python3-distupgrade`. **Обе версии при этом есть на сервере в
+`resolute-updates`** — проверено запросом к зеркалу напрямую.
+
+Причина — на самой Pi:
+
+```
+137401  resolute-updates_InRelease                     получен нормально
+     0  resolute-updates_main_binary-arm64_Packages    ПУСТО
+     0  ... universe, multiverse, restricted            ПУСТО
+```
+
+Списки пакетов `-updates` нулевого размера, часть датирована днём сборки
+образа — то есть так пришло прямо из образа. При `apt-get update` заголовок
+`InRelease` не меняется, apt пишет `Hit` и продолжает доверять пустым спискам.
+Для него `-updates` просто не существует.
+
+Лечится сбросом кэша индексов:
+
+```bash
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get update
+```
+
+**Делать сразу после первой загрузки, до установки чего-либо.**
+
+Чего не делать: откатывать `packagekit` и прочие пакеты на архивные версии.
+Это лечит симптом по одному пакету за раз, а следом сломается следующий.
+Проверка, что починилось:
+
+```bash
+apt-cache policy packagekit   # должна появиться строка resolute-updates/main
+```
+
+По пути отвергнута версия «arm64 раздаётся только с ports.ubuntu.com»:
+оба зеркала, `archive` и `ports`, отдают одинаковые версии в `-updates`.
+
+## Рабочий стол, браузер, контейнеры (выполнено)
+
+Сначала — перенос на NVMe и починка индексов apt (разделы выше), и только
+потом установка. Иначе всё поставленное на SD пришлось бы переносить заново.
+
+```bash
+sudo apt-get install -y ubuntu-desktop-minimal incus
+sudo usermod -aG incus-admin gadjet
+sudo incus admin init --minimal
+sudo reboot
+```
+
+Результат (927 новых пакетов):
+
+| | |
+|---|---|
+| Рабочий стол | GNOME 50.1 + GDM, `graphical.target` по умолчанию |
+| Браузер | Firefox 155 (snap — в Ubuntu он так и поставляется) |
+| Контейнеры | Incus 6.0.5, минимальная инициализация, работает без sudo |
+| Дисплей | `card1-DSI-1` connected, 800x480, экран входа GDM на нём |
+
+GNOME выбран за поддержку сенсорного ввода и экранную клавиатуру — для 7"
+тача это решающее. Минус — на 800x480 тесно; альтернатива полегче — XFCE/LXQt,
+но у них заметно хуже с тачем.
+
+Группа `incus-admin` применяется при следующем входе — поэтому перезагрузка.
+
+## Сеть: адрес меняется между загрузками
+
+`.156` (с SD) → `.158` (первая загрузка с NVMe) → `.157` (после установки
+рабочего стола). MAC один и тот же: `2c:cf:67:6e:18:26`.
+
+Причина последней смены: `ubuntu-desktop-minimal` ставит NetworkManager, и он
+перехватывает `eth0` у systemd-networkd:
+
+```
+nmcli:      eth0:connected:netplan-eth0
+networkctl: eth0  ether  unmanaged
+```
+
+У NM свой идентификатор DHCP-клиента, роутер счёл это новым устройством.
+Дальше под NM адрес должен держаться, но **надёжно — только резерв на
+роутере по MAC**. Статический адрес на самой Pi опасен, пока неизвестен
+диапазон DHCP роутера: можно попасть в занятый.
+
+Найти Pi, если адрес снова уехал:
+
+```bash
+for i in $(seq 1 254); do (ping -c1 -W1 192.168.10.$i >/dev/null &); done; sleep 5
+ip neigh | grep -i 2c:cf:67
+```
 
 ## Контейнеры: LXC на Ubuntu — да
 
