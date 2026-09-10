@@ -8,9 +8,9 @@
 |---|---|---|---|---|
 | `kitjet` | x86_64 | **работает** | домашний сервер: ZFS-хранилище (tank), libvirt/KVM, Jellyfin, HAOS (виртуалка), рабочее место | niri + DMS |
 | `gadnix` | x86_64 | под переустановку | ПК: игры, браузер, работа (RDP, WinBox, LibreOffice, VS Code) | niri + DMS |
-| `rpinix` | aarch64 | **работает** — корень на NVMe, загрузка с SD | Raspberry Pi 5: контейнеры, реплики. DSI пока не работает (нет в mainline) | пока нет, HDMI |
+| `rpinix` | aarch64 | **Ubuntu Server 26.04.1** (не NixOS) | Raspberry Pi 5: контейнеры (Incus), 7" DSI. NixOS отложен — нет DSI в mainline, см. docs/14 | нет / по желанию |
 
-Пользователь везде `gadjet`. `kitjet` и `gadnix` на стабильной ветке nixpkgs 26.05; `rpinix` на `nixpkgs-unstable` (aarch64+Pi5 требуют свежего ядра).
+Пользователь везде `gadjet`. `kitjet` и `gadnix` — NixOS на стабильной ветке nixpkgs 26.05. `rpinix` — **Ubuntu**, во flake не участвует (конфиг `hosts/rpinix` сохранён на случай возврата к NixOS).
 
 ## Раскладка
 
@@ -39,7 +39,7 @@ nix flake update                               # обновить inputs
 - Общая настройка идёт в `modules/`, специфика машины — в `hosts/`. Дублирование между хостами — сигнал вынести в модуль.
 - `~/.config/niri/config.kdl` намеренно НЕ под управлением home-manager. Не переводить без явной просьбы.
 - Коммит после успешной сборки, не до.
-- LXC не использовать. Вместо него `containers.<имя>` (systemd-nspawn) или `virtualisation.oci-containers`.
+- **На NixOS** LXC не использовать: `virtualisation.lxc` императивный, во flake не описывается. Вместо него `containers.<имя>` (systemd-nspawn) или `virtualisation.oci-containers`. На Ubuntu (`rpinix`) правило не действует — там Incus штатный инструмент.
 - На `rpinix` только aarch64-гости: KVM там не эмулирует, x86-образы не запустятся.
 - При добавлении опции проверять, импортирован ли объявляющий её модуль: «option does not exist» почти всегда значит отсутствующий импорт, а не опечатку.
 
