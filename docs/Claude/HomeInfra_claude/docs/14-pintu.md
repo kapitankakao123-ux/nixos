@@ -1,8 +1,8 @@
 ---
-tags: [хост, rpinix, pi5, ubuntu, установка, гайд]
+tags: [хост, pintu, pi5, ubuntu, установка, гайд]
 ---
 
-# rpinix на Ubuntu Server
+# pintu — Raspberry Pi 5 на Ubuntu
 
 > **Решение 2026-09-10.** NixOS на Pi 5 работает, но без DSI (в mainline
 > нет кода DSI для bcm2712, см. [[12-rpinix-portable]]). Для портативного
@@ -67,7 +67,7 @@ sync
 
 ```yaml
 #cloud-config
-hostname: rpinix
+hostname: pintu
 manage_etc_hosts: true
 timezone: Europe/Moscow
 
@@ -96,24 +96,77 @@ ssh_pwauth: true           # по паролю, пока нет ключа
 yq '.hostname, .users[0].name, .ssh_pwauth' /run/media/$USER/system-boot/user-data
 ```
 
-## Перенос на NVMe
+## Перенос на NVMe (выполнено 2026-09-10)
 
-> Выполняется после первой загрузки с SD. Раздел будет дополнен по факту.
+Проверено по шагам на живой машине.
 
-План:
+### 1. Скачать образ прямо на Pi
 
-1. Загрузиться с SD, дождаться окончания cloud-init (`cloud-init status --wait`).
-2. Записать тот же образ на NVMe прямо с Pi:
-   `xzcat …img.xz | sudo dd of=/dev/nvme0n1 bs=4M status=progress conv=fsync`
-3. Скопировать наш `user-data` в `system-boot` на NVMe.
-4. EEPROM: NVMe первым в порядке загрузки —
-   `sudo rpi-eeprom-config --edit` → `BOOT_ORDER=0xf416`
-   (читается справа налево: 6 — NVMe, 1 — SD, 4 — USB, f — повтор).
-5. Для NVMe-адаптеров, не соответствующих HAT+, добавить `PCIE_PROBE=1`,
-   иначе загрузчик не увидит диск.
-6. Вынуть SD, загрузиться с NVMe.
+По кабелю быстрее, чем гнать 1.5 ГБ с kitjet по Wi-Fi:
 
-Корень растянется на весь диск при первой загрузке сам.
+```bash
+cd /tmp
+curl -LO http://cdimage.ubuntu.com/releases/resolute/release/ubuntu-26.04.1-preinstalled-server-arm64+raspi.img.xz
+echo "d59ef9c6e85b906995501f166d00726ab80b59be7b65cdeac0fa31b996053e13  ubuntu-26.04.1-preinstalled-server-arm64+raspi.img.xz" | sha256sum -c
+```
+
+### 2. Записать на NVMe
+
+```bash
+sudo sh -c "xzcat /tmp/ubuntu-*.img.xz | dd of=/dev/nvme0n1 bs=4M conv=fsync status=progress"
+```
+
+Весь конвейер — внутри `sh -c`. Если писать `xzcat … | sudo dd`, а пароль
+подавать через `sudo -S`, то stdin занят потоком образа и пароль не дойдёт.
+
+### 3. Положить user-data на NVMe
+
+```bash
+sudo mount /dev/nvme0n1p1 /mnt
+sudo cp /mnt/user-data /mnt/user-data.orig
+sudo cp <наш user-data> /mnt/user-data     # hostname: pintu
+sudo umount /mnt
+```
+
+### 4. EEPROM: NVMe первым
+
+Было `BOOT_ORDER=0xf461` — читается справа налево: **1 (SD) → 6 (NVMe)** →
+4 (USB) → f (повтор). Поэтому с картой в слоте Pi всегда уходила в SD.
+
+```bash
+sudo rpi-eeprom-config > /tmp/eeprom.conf
+sed -i "s/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/" /tmp/eeprom.conf
+sudo rpi-eeprom-config --apply /tmp/eeprom.conf     # ждём VERIFY: SUCCESS
+```
+
+`PCIE_PROBE=1` **не понадобился**: EEPROM видит NVMe и без него — это
+доказано ещё попыткой с NixOS, когда Pi сама загрузилась с NVMe.
+
+### 5. ВЫНУТЬ SD — обязательно
+
+SD и NVMe записаны из одного образа, поэтому совпадают **и метки, и PARTUUID**:
+
+```
+mmcblk0p1  system-boot  c1b80844-01      nvme0n1p1  system-boot  c1b80844-01
+mmcblk0p2  writable     c1b80844-02      nvme0n1p2  writable     c1b80844-02
+```
+
+А корень Ubuntu ищет по метке:
+
+```
+cmdline:  root=LABEL=writable
+fstab:    LABEL=writable  /   и   LABEL=system-boot  /boot/firmware
+```
+
+С двумя дисками загрузчик возьмёт NVMe, а корень может подцепиться с SD.
+Та же ловушка, что была с `NIXOS_SD` у NixOS.
+
+Загрузочные файлы в 26.04 лежат в `/boot/firmware/current/` (схема A/B),
+а не в корне раздела — `cmdline.txt` искать там.
+
+### 6. Загрузиться
+
+Корень растянется на весь диск при первой загрузке сам (cloud-init).
 
 ## Контейнеры: LXC на Ubuntu — да
 
