@@ -3,6 +3,17 @@
 # Всё, что специфично для конкретного железа или роли — НЕ сюда.
 { config, pkgs, lib, inputs, ... }:
 
+let
+  # Публичные ключи машин, с которых разрешён вход. Один список — и для
+  # gadjet, и для root, чтобы не разъехались.
+  sshKeys = [
+    # kitjet: создан 2026-09-11 для установки deskjet через kexec.
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPL3eyBKG1xsG/55hY1W8Bt35j+VJjLSxm1CU/FAJfMv gadjet@kitjet"
+    # deskjet: ключ пережил переустановку вместе с /home. Подпись в конце
+    # осталась от Arch (GadjetArch) — на работу ключа она не влияет.
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHMlFT5xnJHR3MgFqzytZjQuhRjC/ZKC1sYaN1cyyATx gadjet@GadjetArch"
+  ];
+in
 {
   # ── Nix ──────────────────────────────────────────────────────
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -51,6 +62,7 @@
     isNormalUser = true;
     description = "gadjet";
     extraGroups = [ "networkmanager" "wheel" ];
+<<<<<<< HEAD
     # Ключи для входа по ssh. Ключ один на все машины: он лежит в `/home`
     # на deskjet и пережил переустановку вместе с разделом, комментарий
     # `gadjet@GadjetArch` — просто его имя с Arch, менять не нужно.
@@ -60,7 +72,18 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHMlFT5xnJHR3MgFqzytZjQuhRjC/ZKC1sYaN1cyyATx gadjet@GadjetArch"
     ];
+=======
+    # Ключи для входа по ssh — публичные, секретом не являются.
+    # PasswordAuthentication ниже пока ОСТАЁТСЯ включённым: выключать,
+    # только когда вход по ключу проверен на каждой машине.
+    openssh.authorizedKeys.keys = sshKeys;
+>>>>>>> 8882a7c (ssh-ключи kitjet и deskjet, Sunshine на deskjet)
   };
+
+  # root по ключу — для деплоя с другой машины (nixos-rebuild --target-host,
+  # позже colmena: она ходит именно как root). Паролем root не входит —
+  # на установленных системах пароль root не задан.
+  users.users.root.openssh.authorizedKeys.keys = sshKeys;
 
   # ── SSH ──────────────────────────────────────────────────────
   # Через него ходит colmena, так что сервер нужен на всех машинах.
