@@ -1,6 +1,6 @@
 # modules/virtualisation.nix — libvirt/KVM.
-# ПОКА НЕ ИМПОРТИРУЕТСЯ: включать по чек-листу в docs/10-kitjet.md.
-# LXC не используем — см. решение в docs/00-Проект.md.
+# Импортируется kitjet: на нём VM с Home Assistant. См. vault: Машины/kitjet/Home-Assistant.md.
+# LXC на NixOS не используем — см. решение в vault: 00-Проект.md.
 { config, pkgs, lib, ... }:
 
 {
