@@ -88,8 +88,19 @@
   # zram как на Arch: сжатый swap в памяти вместо раздела на диске.
   zramSwap.enable = true;
 
-  # TODO: Sunshine (стриминг игр) — был на Arch. Включить отдельно:
-  # services.sunshine = { enable = true; capSysAdmin = true; openFirewall = true; };
+  # ── Sunshine — стриминг игр на Moonlight ─────────────────
+  # На Arch стоял, в niri есть рабочие столы Sunshine-1/2/3.
+  services.sunshine = {
+    enable = true;
+    capSysAdmin = true;    # захват экрана через DRM/KMS: без этого под Wayland картинки нет
+    openFirewall = true;
+    # autoStart ВЫКЛЮЧЕН: запускает его сам niri (`spawn-at-startup "sunshine"`
+    # в ~/.config/niri/config.kdl, как было на Arch). Со включённым autoStart
+    # стартовало бы два экземпляра, и второй упёрся бы в занятые порты.
+    # Когда конфиг niri станет общим с kitjet (dotfiles/), эту строку из него
+    # надо убрать, а здесь включить autoStart: Sunshine нужен только deskjet.
+    autoStart = false;
+  };
 
   # Маркер формата данных, а не версия ОС. НЕ МЕНЯТЬ НИКОГДА.
   system.stateVersion = "26.05";

@@ -4,10 +4,16 @@ tags: [хост, deskjet, nixos, установка, гайд]
 
 # deskjet — домашний ПК
 
+<<<<<<< HEAD
 > **Статус: NixOS стоит и работает** (2026-09-13). Машина загружается с
 > ядра zen 7.1.10, `/home` с Arch подхватился целиком, репозиторий склонирован
 > в `~/nixos` — теперь рабочая копия есть и здесь, не только на kitjet.
 > Осталось довести мелочи из раздела «После установки».
+=======
+> **Статус: РАБОТАЕТ** (2026-09-12). NixOS установлен через kexec, `/home`
+> сохранён целиком. Видео RDNA4 работает, вход по ssh-ключу настроен.
+> Итоги — в разделе «Результат».
+>>>>>>> 9a486f5 (docs: deskjet установлен через kexec, /home сохранён)
 
 Имя — пара к `kitjet`: кухонный и настольный. Раньше звался `gadnix`,
 рабочее имя `desktop`.
@@ -212,11 +218,112 @@ Documents 1859, Pictures 530, `.ssh` 8, `.gnupg` 4.
 командой `zfs destroy`.
 ### Сама установка — выполнено (2026-09-12)
 
+<<<<<<< HEAD
 - [x] Загрузиться с установщика NixOS
 - [x] Форматировать **только** `p1` и `p2` с метками `BOOT` и `deskjet`
 - [x] Смонтировать `p3` в `/mnt/home`, **не форматируя**
 - [x] Сверить `hardware-configuration.nix` с выводом `nixos-generate-config`
 - [x] `nixos-install --flake`
+=======
+### Установка через kexec — выполнено 2026-09-12
+
+Флешка не понадобилась: из работающего Arch машина перезагружается
+в установщик NixOS, который живёт в памяти, и дальше всё по SSH.
+
+**1. Ключ для root.** Установщик пускает только по ключу и забирает
+`authorized_keys` root'а с текущей системы. На kitjet ключа не было:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C gadjet@kitjet -f ~/.ssh/id_ed25519
+# публичный ключ -> /root/.ssh/authorized_keys на Arch
+```
+
+**2. Установщик.** Из `nix-community/nixos-images`, релиз под нашу же
+ветку 26.05, 457 МБ, sha256 сверен:
+
+```bash
+curl -sL -o kexec.tar.gz https://github.com/nix-community/nixos-images/releases/download/nixos-26.05/nixos-kexec-installer-noninteractive-x86_64-linux.tar.gz
+tar -xzf kexec.tar.gz && ./kexec/run
+```
+
+Скрипт сам сохраняет сетевые настройки и поднимает их в новой системе —
+адрес остался тем же. SSH поднялся через ~35 секунд.
+
+**3. Форматирование — только p1 и p2.** Со сверкой UUID: скрипт
+прерывается, если UUID не совпал с ожидаемым или если под руку попал
+раздел `/home`.
+
+```bash
+mkfs.vfat -F 32 -n BOOT /dev/nvme0n1p1
+mkfs.btrfs -f -L deskjet  /dev/nvme0n1p2
+udevadm trigger --subsystem-match=block; udevadm settle
+```
+
+> **Ловушка:** сразу после `mkfs` `lsblk` показывал у p2 старый UUID и
+> без метки — это кэш udev, на диске всё было правильно (`blkid -p`
+> читает сам диск). Без `udevadm settle` не появилась бы ссылка
+> `/dev/disk/by-label/deskjet`, по которой конфиг монтирует корень.
+
+**4. Система копируется с kitjet, а не собирается заново.** В памяти
+установщика 20 ГБ не удержать (tmpfs ограничен половиной RAM), поэтому
+копируем сразу в хранилище на диске:
+
+```bash
+nix copy --no-check-sigs --to 'ssh://root@<ip>?remote-store=local%3Froot%3D/mnt' <система>
+```
+
+23 ГБ по гигабиту. Это избавило от повторной компиляции RustDesk
+(~15 минут на 16 потоках): несвободные пакеты Hydra не собирает, и
+RustDesk в кэше тоже не оказался.
+
+**5. Установка и пароль.**
+
+```bash
+nixos-install --system <система> --root /mnt --no-root-passwd --no-channel-copy
+echo 'gadjet:1414' | nixos-enter --root /mnt -c chpasswd
+```
+
+Пароль задать обязательно: в `common.nix` его нет, а без пароля вход
+невозможен.
+
+**6. Порядок загрузки UEFI — обязательно проверить.**
+
+После установки было так:
+
+```
+BootOrder: 0004,0005,0000
+Boot0004* GRUB              -> \EFI\GRUB\GRUBX64.EFI   файла БОЛЬШЕ НЕТ
+Boot0000* Linux Boot Manager -> systemd-bootx64.efi       последним
+```
+
+Первой стояла запись GRUB, указывающая на файл, стёртый вместе с
+разделом. Загрузка прошла бы только на удаче — через откат прошивки на
+запасной `BOOTX64.EFI`. Одни платы откатываются молча, другие показывают
+ошибку или уходят в настройки.
+
+```bash
+efibootmgr -b 0004 -B        # удалить мёртвую запись
+efibootmgr -o 0000,0005,0001 # systemd-boot первым
+```
+
+## Результат
+
+| | |
+|---|---|
+| Система | NixOS 26.05 (Yarara), ядро **7.1.10-zen1** |
+| Видео | **AMD Radeon RX 9060 XT (RADV GFX1200)**, Mesa 26.1.8 — Vulkan работает |
+| Пользователь | `uid=1000 gid=1000(gadjet)`, zsh, группы wheel/docker/video/render/wireshark |
+| `/home` | цел: Documents 1859 файлов — столько же, сколько было на Arch |
+| Разделы | `/` и `/home` — btrfs с `compress=zstd:3,noatime,discard=async` |
+| Службы | greetd, lactd, docker, NetworkManager, home-manager — активны, упавших нет |
+| Sunshine | стоит, обёртка с `cap_sys_admin`, порты 47984/47989/48010 открыты |
+| SSH | вход по ключу работает для `gadjet` и `root` |
+
+Конфликт home-manager был ровно один: `~/.config/mimeapps.list`
+переименован в `.hm-bak`. Это ассоциации файлов со старого Arch —
+если чего-то не хватает, забрать оттуда.
+
+>>>>>>> 9a486f5 (docs: deskjet установлен через kexec, /home сохранён)
 
 План сработал буквально: `p3` сохранил свой UUID `be7721f1-…`, метки `BOOT`
 и `deskjet` на месте, `/home` подхватился со всеми настройками — niri, DMS,
@@ -230,6 +337,7 @@ Documents 1859, Pictures 530, `.ssh` 8, `.gnupg` 4.
 | `/` (p2) | 50 ГБ | **13 ГБ**, из них `/nix/store` 21 ГБ (дедуплицирован) |
 | `/home` (p3) | 903 ГБ | 529 ГБ |
 
+<<<<<<< HEAD
 Оценка «20 ГБ за поколение» подтвердилась: 50 ГБ под корень — с запасом.
 Ядро — zen 7.1.10, как и планировалось.
 
@@ -342,6 +450,18 @@ Web-интерфейс — https://localhost:47990, порты 47989/47990 сл�
 - [x] Расхождение с `origin/master` сведено
 - [x] Вход по ключу с deskjet на kitjet проверен: `ssh kitjet` без пароля
 - [ ] Удалить `tank/backup-deskjet`, когда всё проверено
+=======
+- [x] Вход по ssh-ключу для `gadjet` и `root` — ключи kitjet и deskjet в `common.nix`
+- [x] Sunshine включён (`capSysAdmin`, `autoStart = false` — запускает niri)
+- [ ] Сесть за машину: проверить niri + DMS, Steam и Proton, VIA
+- [ ] Общий конфиг niri/DMS/ghostty для kitjet и deskjet — снимок уже в `dotfiles/`
+- [ ] Выключить `PasswordAuthentication` — вход по ключу проверен на обеих машинах
+- [ ] Устаревшие опции: `programs.git.userEmail` → `programs.git.settings.user.email`,
+      `system` в оверлее → `stdenv.hostPlatform.system`
+- [ ] Удалить `tank/backup-deskjet` (116 ГБ), когда всё проверено
+- [ ] `mimeapps.list.hm-bak` — забрать нужные ассоциации, если чего-то не хватает
+
+>>>>>>> 9a486f5 (docs: deskjet установлен через kexec, /home сохранён)
 
 **Про Sunshine решено:** главный — Web-UI. `~/.config/sunshine/sunshine.conf`
 правится через интерфейс, в nix переносится только сам факт включения сервиса
