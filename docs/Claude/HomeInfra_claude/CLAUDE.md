@@ -7,10 +7,10 @@
 | Хост | Арх | Состояние | Роль | Оболочка |
 |---|---|---|---|---|
 | `kitjet` | x86_64 | **работает** | домашний сервер: ZFS-хранилище (tank), libvirt/KVM, Jellyfin, HAOS (виртуалка), рабочее место | niri + DMS |
-| `gadnix` | x86_64 | под переустановку | ПК: игры, браузер, работа (RDP, WinBox, LibreOffice, VS Code) | niri + DMS |
+| `deskjet` | x86_64 | под переустановку | ПК: игры, браузер, работа (RDP, WinBox, LibreOffice, VS Code) | niri + DMS |
 | `pintu` (бывш. `rpinix`) | aarch64 | **Ubuntu Server 26.04.1** (не NixOS) | Raspberry Pi 5: контейнеры (Incus), 7" DSI. NixOS отложен — нет DSI в mainline, см. [[pintu]], [[NixOS-на-Pi5]] | нет / по желанию |
 
-Пользователь везде `gadjet`. `kitjet` и `gadnix` — NixOS на стабильной ветке nixpkgs 26.05. `pintu` (бывший `rpinix`) — **Ubuntu**, во flake не участвует (конфиг `hosts/rpinix` сохранён на случай возврата к NixOS).
+Пользователь везде `gadjet`. `kitjet` и `deskjet` — NixOS на стабильной ветке nixpkgs 26.05. `pintu` (бывший `rpinix`) — **Ubuntu**, во flake не участвует (конфиг `hosts/rpinix` сохранён на случай возврата к NixOS).
 
 ## Раскладка
 

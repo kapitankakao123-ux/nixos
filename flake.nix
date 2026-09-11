@@ -72,7 +72,11 @@
           # (boot_targets=mmc usb pxe dhcp, драйвера нет), поэтому /boot
           # живёт на SD, а корень на NVMe. Разбор — vault: Машины/pintu/NixOS-на-Pi5.md.
         };
-        # gadnix = { system = "x86_64-linux"; home = ./home/gadnix.nix; };
+        # Домашний ПК: игры, браузер, работа. Раньше звался gadnix.
+        deskjet = {
+          system = "x86_64-linux";
+          home = ./home/deskjet.nix;
+        };
       };
 
       # Сборка одной системы из описания выше.

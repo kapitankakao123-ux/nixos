@@ -28,6 +28,17 @@
   # modules/storage.nix, привязывая его к версии ZFS.
   # Вернуть linuxPackages_latest можно только вместе с отказом от ZFS.
 
+  # ── Jellyfin — медиасервер ───────────────────────────────
+  # Роль именно этой машины: раздаёт /tank/media на телевизор.
+  # Раньше лежал в modules/desktop.nix и приехал бы на любой рабочий
+  # стол, включая deskjet. Перенесён сюда 2026-09-11.
+  services.jellyfin = {
+    enable = true;
+    openFirewall = true;
+    # Кэш и конфиги — в /var/lib/jellyfin/ (управляется systemd).
+    # Медиа-библиотека — в /tank/media (добавляется в веб-интерфейсе).
+  };
+
   # ── Kingston SSD для VM образов ────────────────────────────
   # KINGSTON SA400S37480G, 447 GiB, btrfs
   fileSystems."/var/lib/libvirt/images" = {
