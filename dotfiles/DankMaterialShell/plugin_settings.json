@@ -1,0 +1,776 @@
+{
+  "linuxWallpaperEngine": {
+    "enabled": true,
+    "monitorScenes": {
+      "HDMI-A-1": "1661372823",
+      "HDMI-A-2": "1661372823",
+      "*": "3644556918",
+      "DP-1": "3727400974"
+    },
+    "sceneSettings": {
+      "1245604951": {
+        "fps": 27
+      },
+      "1436548880": {
+        "fps": 30
+      },
+      "1490131744": {
+        "scaling": "stretch",
+        "silent": true
+      },
+      "1536391368": {
+        "fps": 29
+      },
+      "1661372823": {
+        "fps": 58,
+        "scaling": "default",
+        "fullscreenPauseOnlyActive": true,
+        "noAutoMute": false,
+        "noAudioProcessing": false,
+        "disableMouse": false,
+        "disableParallax": false,
+        "disableParticles": false,
+        "silent": true,
+        "noFullscreenPause": false,
+        "properties": {
+          "schemecolor": [
+            0.40784313725490196,
+            0,
+            0,
+            1
+          ]
+        }
+      },
+      "1837638815": {
+        "scaling": "default"
+      },
+      "1888636115": {
+        "scaling": "stretch"
+      },
+      "1999619470": {
+        "properties": {
+          "schemecolor": [
+            0.003922,
+            0.733333,
+            0.882353
+          ],
+          "vhs_effect": true
+        },
+        "fps": 30,
+        "disableParticles": true,
+        "disableParallax": true,
+        "fullscreenPauseOnlyActive": true
+      },
+      "2071366191": {
+        "properties": {
+          "3dVisualizer_bars_deltaX": 64,
+          "3dVisualizer_bars_deltaY": 64,
+          "3dVisualizer_bars_light_color": [
+            0.2784313725490196,
+            0.6666666666666666,
+            0.5803921568627451
+          ],
+          "3dVisualizer_bars_light_power": 46,
+          "3dVisualizer_color": [
+            0.4470588235294118,
+            0,
+            0
+          ],
+          "3dVisualizer_hideWhenSilent": false,
+          "3dVisualizer_silentColor": [
+            0.3843137254901961,
+            0,
+            0
+          ],
+          "3dVisualizer_zoom": 61,
+          "_3dVisualizer_silentColor_bool": true
+        }
+      },
+      "2156479578": {
+        "scaling": "fill",
+        "properties": {
+          "add_wave_2": null,
+          "audio_influence": null,
+          "audio_influence2": null,
+          "audio_quantity": null,
+          "background_color": null,
+          "color_speed": null,
+          "custom_line_color": null,
+          "direction": null,
+          "direction_2": null,
+          "electricity": null,
+          "first_color": null,
+          "flow": null,
+          "flux": null,
+          "grid": null,
+          "grid_color": null,
+          "grid_impulsion": null,
+          "grid_opacity": null,
+          "grid_scale": null,
+          "grid_speed_color": null,
+          "horizontal_scroll": null,
+          "horizontal_speed": null,
+          "intensity": null,
+          "intensity4": null,
+          "intensity_a": null,
+          "intensity_h": null,
+          "intensity_v": null,
+          "last_color": null,
+          "line_style": null,
+          "movement": null,
+          "preset": null,
+          "scale": null,
+          "scale_a": null,
+          "scale_a_2": null,
+          "scale_h": null,
+          "scale_v": null,
+          "schemecolor": null,
+          "scroll": null,
+          "speed": null,
+          "speed_a": null,
+          "speed_a_2": null,
+          "speed_h": null,
+          "speed_v": null,
+          "style": null,
+          "vertical_scroll": null,
+          "wave": null,
+          "wave_horizontal": null,
+          "wave_vertical": null
+        }
+      },
+      "2195977634": {
+        "scaling": "stretch"
+      },
+      "2279430364": {
+        "scaling": "fill"
+      },
+      "2397590537": {
+        "scaling": "fill"
+      },
+      "2403107584": {
+        "scaling": "fill"
+      },
+      "2438936336": {
+        "fps": 65,
+        "properties": {
+          "amplitude": 37,
+          "blend": [
+            1,
+            0.9764705882352941,
+            1
+          ],
+          "frequency": 47,
+          "heightsegments": 39,
+          "period": 65,
+          "materialsettings": true,
+          "interpolation": true,
+          "preset": 30,
+          "randomnoise": 66,
+          "ribboncolor": [
+            0.615686274509804,
+            0.32941176470588235,
+            0.788235294117647
+          ],
+          "color1": [
+            1,
+            0.9411764705882353,
+            1
+          ],
+          "color2": [
+            1,
+            0.9882352941176471,
+            1
+          ],
+          "colorshift": 48,
+          "fps": 49
+        },
+        "disableParticles": true,
+        "noFullscreenPause": false,
+        "scaling": "stretch",
+        "fullscreenPauseOnlyActive": false,
+        "silent": true
+      },
+      "2780978742": {
+        "properties": {
+          "flashingstars": true,
+          "schemecolor": [
+            0.23921568627450981,
+            1,
+            1
+          ],
+          "sizeclock": 73
+        }
+      },
+      "2896326789": {
+        "scaling": "stretch",
+        "properties": {
+          "backgroundscale1": 3,
+          "blurbackground": true,
+          "blurbackground2": true,
+          "background": "3",
+          "color": [
+            0.047058823529411764,
+            1,
+            1,
+            0.8627450980392157
+          ],
+          "schemecolor": [
+            0.25098039215686274,
+            1,
+            1,
+            1
+          ],
+          "size": 0,
+          "particles": [
+            0.2627450980392157,
+            1,
+            1,
+            1
+          ],
+          "clock24hformat": true,
+          "darkenbackground": 0,
+          "dateformatddmmyyyy": true,
+          "mediaalwayson": true,
+          "particlecount": 2
+        },
+        "fps": 31
+      },
+      "2914013390": {
+        "scaling": "stretch"
+      },
+      "2936674489": {
+        "fps": 28
+      },
+      "2938612768": {
+        "fps": 26
+      },
+      "2943621120": {
+        "disableParticles": false
+      },
+      "2977505069": {
+        "scaling": "fill",
+        "silent": true
+      },
+      "2977950646": {
+        "fps": 34,
+        "scaling": "fit",
+        "noAutoMute": false,
+        "silent": false,
+        "volume": 100
+      },
+      "2981249186": {
+        "properties": {
+          "bottomrighttime": false,
+          "centertime": false,
+          "explosion": false,
+          "explosionrate": 0,
+          "rotationspeed": 0,
+          "schemecolor": [
+            0,
+            1,
+            1
+          ]
+        }
+      },
+      "3000562427": {
+        "scaling": "stretch",
+        "properties": {
+          "albumcover": true,
+          "animationalphaposstepsize": 34,
+          "animationalphastepsize": 49,
+          "animationmaxalpha": 48,
+          "displaypanelglicheffectcooldownduration": 49
+        },
+        "fps": 30
+      },
+      "3136351729": {
+        "fps": 30,
+        "properties": {
+          "backgroundcolor": [
+            1,
+            1,
+            1
+          ],
+          "color": [
+            1,
+            1,
+            1
+          ],
+          "schemecolor": [
+            0.6745098039215687,
+            0.611764705882353,
+            1
+          ],
+          "size": 95,
+          "stopanimation": true
+        }
+      },
+      "3358541212": {
+        "fps": 30,
+        "disableParallax": false,
+        "disableParticles": false
+      },
+      "3377132665": {
+        "properties": {
+          "music": 49,
+          "motherduck": true,
+          "clouds": false,
+          "daydatetime": false,
+          "clock": "1",
+          "bubble": "1"
+        },
+        "disableParticles": true,
+        "disableParallax": true
+      },
+      "3384583118": {
+        "properties": {
+          "chromaticabberation": true,
+          "schemecolor": [
+            0.7098039215686275,
+            0.5019607843137255,
+            1
+          ]
+        },
+        "screenshotDelay": 50,
+        "disableParallax": true
+      },
+      "3385272677": {
+        "properties": {
+          "audiovisualizer": true,
+          "barcolor": [
+            1,
+            0.5568627450980392,
+            0.8196078431372549
+          ],
+          "barcount": 152,
+          "barpositiony": 1715,
+          "barscaley": 48,
+          "barspacing": 43,
+          "chromaticabberation1": false,
+          "ihateascii": true,
+          "maxintensity": 48,
+          "minintensity": 48,
+          "barpositionx": 900,
+          "rainbowbars": true,
+          "rainbowmode": true,
+          "schemecolor": [
+            0,
+            1,
+            1,
+            1
+          ],
+          "scrollx": 0,
+          "transparency": 0,
+          "worley": true
+        }
+      },
+      "3466268102": {
+        "properties": {
+          "cellsize": 95,
+          "changespeed": 28,
+          "schemecolor": [
+            0.2784313725490196,
+            1,
+            0.996078431372549
+          ],
+          "symbolcolor": [
+            0.2901960784313726,
+            1,
+            1
+          ]
+        },
+        "silent": true,
+        "volume": 0,
+        "scaling": "stretch"
+      },
+      "3528316973": {
+        "properties": {
+          "backgroundcolor": [
+            0.26666666666666666,
+            0.4235294117647059,
+            0.6
+          ],
+          "black": [
+            0.011764705882352941,
+            0,
+            0
+          ],
+          "coloredascii": true,
+          "cyan": [
+            0.3215686274509804,
+            0.7294117647058823,
+            0.6588235294117647
+          ]
+        },
+        "scaling": "fit",
+        "fps": 31
+      },
+      "3568534021": {
+        "fps": 32,
+        "disableParallax": false,
+        "disableParticles": false,
+        "properties": {
+          "schemecolor": [
+            0.6901960784313725,
+            0.29412,
+            0.69412,
+            1
+          ]
+        }
+      },
+      "3616389236": {
+        "properties": {
+          "aberracioncromatica": true,
+          "albumname": true,
+          "albumtexture": true,
+          "alfa": 47,
+          "amount": 41,
+          "appdockalpha": 38,
+          "appdockapplyusertexture1": true,
+          "appdockapplyusertexture10": true,
+          "appdockapplyusertexture13": true,
+          "appdockapplyusertexture15": true
+        }
+      },
+      "3634342477": {
+        "properties": {
+          "bigcoverartresolution": null,
+          "bsodchance": null,
+          "clock0": null,
+          "clock1": null,
+          "clock2": null,
+          "clock3": null,
+          "clock4": null,
+          "custombgcolor": null,
+          "custombgimage": null,
+          "customlogoresolution": null,
+          "eastereggs": null,
+          "efeitovhs": null,
+          "fontsize": null,
+          "furrymode": null,
+          "highlighttextcolor": null,
+          "language": null,
+          "logo": null,
+          "metergreencolor": null,
+          "metergreycolor": null,
+          "meterredcolor": null,
+          "meteryellowcolor": null,
+          "optionalsupportthiswallpaper": null,
+          "pretoebranco": null,
+          "resoluo": null,
+          "schemecolor": null,
+          "showalbumcovers": null,
+          "showsysteminfo": null,
+          "textcolor": null,
+          "theme": null,
+          "timer0": null,
+          "timer1": null,
+          "timer2": null,
+          "timer3": null,
+          "timer4": null
+        }
+      },
+      "3642408184": {
+        "disableParticles": true,
+        "disableParallax": true
+      },
+      "3643368871": {
+        "scaling": "stretch"
+      },
+      "3648988375": {
+        "properties": {
+          "intensity": 75,
+          "newproperty": [
+            0.5137254901960784,
+            1,
+            1
+          ],
+          "noiseintensity": 22,
+          "offsetx": 61,
+          "offsety": 66,
+          "schemecolor": [
+            0.5215686274509804,
+            0.8862745098039215,
+            1
+          ],
+          "topcolor": [
+            0,
+            1,
+            1
+          ],
+          "pillarheight": 48,
+          "pillarrotation": 65,
+          "pillarwidth": 62
+        }
+      },
+      "3711552296": {
+        "properties": {
+          "schemecolor": [
+            0.33725490196078434,
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    "generateStaticWallpaper": true,
+    "monitorPlaylists": {},
+    "playlistShuffle": true,
+    "playlistIntervalMinutes": 0,
+    "activeType": "scene",
+    "outputSettings": {
+      "DP-1": {
+        "silent": true,
+        "fps": 30,
+        "scaling": "stretch",
+        "fullscreenPauseOnlyActive": false,
+        "noFullscreenPause": false,
+        "disableParallax": false,
+        "disableParticles": false,
+        "noAutoMute": false,
+        "noAudioProcessing": false,
+        "disableMouse": false,
+        "screenshotDelay": 70
+      },
+      "span:gmsghxy47": {
+        "scaling": "stretch",
+        "fps": 26
+      },
+      "*": {
+        "fps": 30,
+        "screenshotDelay": 9,
+        "silent": true
+      }
+    },
+    "spanGroups": [],
+    "pauseOnPowerSaver": false,
+    "pauseOnBattery": false,
+    "namedPlaylists": {
+      "Default": []
+    }
+  },
+  "dankActions": {
+    "enabled": false
+  },
+  "displaySettings": {
+    "enabled": false
+  },
+  "lyricsOnPanel": {
+    "enabled": true,
+    "playerMode": "global",
+    "lyricTextSize": 18,
+    "lyricTextVerticalOffset": 5,
+    "lyricTextColor": {
+      "r": 0.8572975993156433,
+      "g": 0.011276417411863804,
+      "b": 1,
+      "a": 1,
+      "hsvHue": 0.8092777729034424,
+      "hsvSaturation": 0.9887235760688782,
+      "hsvValue": 1,
+      "hslHue": 0.8092777729034424,
+      "hslSaturation": 1,
+      "hslLightness": 0.5056381821632385,
+      "valid": true
+    },
+    "mediaControllSpacing": 10,
+    "mediaControllItemSize": 17,
+    "mediaControllItemVerticalOffset": 2,
+    "whiteMediaControlIconsChecked": false,
+    "hideItemWhenNoControlChecked": false,
+    "showMediaControls": false
+  },
+  "homeAssistantMonitor": {
+    "enabled": true,
+    "hassToken": "",
+    "showAttributes": true,
+    "hassUrl": "http://192.168.10.105:8123",
+    "entityIds": "light.ikea_of_sweden_tradfri_bulb_e14_ws_opal_600lm, sensor.a059_battery_level, switch.ikea_of_sweden_tradfri_control_outlet, switch.sonoff_1000faf670",
+    "customIcons": {
+      "switch.sonoff_1000faf670": "kitchen"
+    },
+    "shortcuts": [
+      {
+        "id": "switch.sonoff_1000faf670",
+        "name": "Свет",
+        "domain": "switch"
+      }
+    ],
+    "pinnedEntities": [],
+    "haRefreshCounter": 9
+  },
+  "amdGpuMonitor": {
+    "enabled": false
+  },
+  "polyglot": {
+    "enabled": true,
+    "sourceLanguage": "English",
+    "targetLanguage": "Russian",
+    "sourceText": "",
+    "targetText": ""
+  },
+  "mediaFrame": {
+    "enabled": false
+  },
+  "dankDesktopWeather": {
+    "enabled": false
+  },
+  "dankKDEConnect": {
+    "enabled": true,
+    "selectedDeviceId": "",
+    "enableChargingAnimation": true
+  },
+  "desktopCommand": {
+    "enabled": false
+  },
+  "mediaPlayer": {
+    "enabled": false
+  },
+  "dankHyprlandWindows": {
+    "enabled": false,
+    "trigger": "!"
+  },
+  "dankObsidian": {
+    "enabled": false,
+    "noTrigger": false,
+    "trigger": "obs",
+    "isFlatpak": false
+  },
+  "sshMonitor": {
+    "enabled": true
+  },
+  "sshConnections": {
+    "enabled": true,
+    "history": [],
+    "server_list": [
+      {
+        "server": "root@192.168.31.1",
+        "options": ""
+      },
+      {
+        "server": "root@89.125.168.91",
+        "options": ""
+      },
+      {
+        "server": "root@104.143.201.191",
+        "options": ""
+      }
+    ],
+    "terminal": "ghostty",
+    "exec_flags": "",
+    "ssh_command": "ssh",
+    "trigger": "ssh"
+  },
+  "easyEffects": {
+    "enabled": true,
+    "currentOutputIndex": -1,
+    "currentInputIndex": -1
+  },
+  "dockerManager": {
+    "enabled": true
+  },
+  "appShortcut": {
+    "enabled": false
+  },
+  "amdGpuMonitorRevive": {
+    "enabled": true,
+    "popoutStyle": "dmsExtended",
+    "minimumWidth": false
+  },
+  "catWidget": {
+    "enabled": true,
+    "catSize": 48,
+    "idleThreshold": 6,
+    "showCpuPercent": false,
+    "updateInterval": 2
+  },
+  "dankterminaltheme": {
+    "enabled": true,
+    "showAllThemes": true,
+    "showArrows": true,
+    "terminal": "ghostty",
+    "gridColumns": "5"
+  },
+  "obsidianSearch": {
+    "enabled": true,
+    "vaultPath": "/home/gadjet/Documents/Obsidian Vault",
+    "noTrigger": false,
+    "trigger": "obs",
+    "isFlatpak": false
+  },
+  "wallpaperCarousel": {
+    "enabled": true,
+    "carouselMode": "infinite",
+    "overlayOpacity": 78,
+    "cornerRadius": 27,
+    "itemHeight": 407,
+    "expandMultiplier": 118
+  },
+  "wallpaperDiscovery": {
+    "enabled": true
+  },
+  "gameControllerBattery": {
+    "enabled": true,
+    "settingsSessionToken": 1779738697961,
+    "displayMode": true,
+    "hideWhenNoControllersConnected": false
+  },
+  "musicLyrics": {
+    "enabled": true,
+    "musixmatchToken": ""
+  },
+  "ambientSound": {
+    "enabled": true,
+    "defaultVolume": 100,
+    "hiddenSounds": []
+  },
+  "dmsThemeSync": {
+    "enabled": true,
+    "syncTerminalFonts": true,
+    "qtPlatformTheme": "auto",
+    "qtStyle": "auto",
+    "syncKvantum": true,
+    "documentFontFamily": "Mononoki Nerd Font Mono",
+    "gtkThemeLight": "auto",
+    "applyMatugenColors": true,
+    "syncCursorColor": true,
+    "dimNiriBorder": true,
+    "syncFolderColor": true,
+    "syncFlatpak": true,
+    "syncKde": true,
+    "syncXsettingsd": true,
+    "folderColorBaseTheme": "Papirus-Light",
+    "qtSyncMode": "kvantum"
+  },
+  "screenCapture": {
+    "enabled": true,
+    "hideCursor": true,
+    "langIndex": 1
+  },
+  "dmsNothingX": {
+    "enabled": true,
+    "deviceColor": "white",
+    "currentMode": "anc",
+    "deviceName": "CMF_Buds_Pro_2",
+    "macAddress": "2C:BE:EE:3C:4D:6F",
+    "eqPreset": "rock",
+    "spatialAudio": false,
+    "gamingMode": false,
+    "inEarDetection": true,
+    "ultraBass": false,
+    "ancSubMode": "adaptive",
+    "ldacEnabled": true
+  },
+  "clashVerge": {
+    "enabled": false
+  },
+  "dmsAgent": {
+    "enabled": true
+  },
+  "claudeUsage": {
+    "enabled": true,
+    "displayStyle": "rings",
+    "showFiveHour": true
+  }
+}

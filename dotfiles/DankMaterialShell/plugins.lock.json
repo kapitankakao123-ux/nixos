@@ -1,0 +1,61 @@
+{
+  "lockfileVersion": 1,
+  "plugins": {
+    "claudeUsage": {
+      "repo": "https://github.com/bogdan-velicu/DankClaudeUsage",
+      "commit": "38e67a4017698c4bbaf84d1c703a32d250d39265"
+    },
+    "dankKDEConnect": {
+      "repo": "https://github.com/AvengeMedia/dms-plugins",
+      "path": "DankKDEConnect",
+      "commit": "2a0f6c57207545433f26b2af32b7d4e72b4c09e2"
+    },
+    "dankObsidian": {
+      "repo": "https://github.com/Samoggino/dankObsidian",
+      "commit": "a31c335d2ba83921fdc105ab3128d5cf3ca3d8cc"
+    },
+    "dankterminaltheme": {
+      "repo": "https://github.com/eduardez/DankTerminalTheme",
+      "commit": "3b8bdec35fd0fe5a3e57056f22666938793833ee"
+    },
+    "dmsAgent": {
+      "repo": "https://github.com/Francisdelca/dms-agent",
+      "commit": "926cded9025f1bc981072b7e0f60e3cc9178b379"
+    },
+    "dmsNothingX": {
+      "repo": "https://github.com/Bestello/dms-nothingx",
+      "commit": "a9a32025efc1068875a9a62db04d18924364c8bf"
+    },
+    "dmsThemeSync": {
+      "repo": "https://github.com/arqueon/dms-theme-sync",
+      "commit": "090867723a05271d13c492104cf7c4c28028924b"
+    },
+    "homeAssistantMonitor": {
+      "repo": "https://github.com/xxyangyoulin/dms-plugin-hass",
+      "commit": "9acf0ae748b1fd4686b763a85b5b65b5d0931c08"
+    },
+    "linuxWallpaperEngine": {
+      "repo": "https://github.com/sgtaziz/dms-wallpaperengine",
+      "commit": "e96718f5038f54546311a239ef0f6622f15c515a"
+    },
+    "nothingClock": {
+      "repo": "https://github.com/samgrande/Dank-Nothing-Clock",
+      "path": "nothingclock",
+      "commit": "36a04d4073b8b741cfd28055897387fd54b2fd61"
+    },
+    "obsidianSearch": {
+      "repo": "https://github.com/kmf/dms-obsidian-search",
+      "commit": "cffadc76d5d64af598e18cfe9c47bc28d493c8d1"
+    },
+    "sshConnections": {
+      "repo": "https://github.com/merdely/dms-plugins",
+      "path": "sshConnections",
+      "commit": "b45d16f30f56c16371d93ecf54c3d0b4c23a24a5"
+    },
+    "sshMonitor": {
+      "repo": "https://github.com/boutabong/dms-plugins",
+      "path": "SSH-Monitor",
+      "commit": "6ec6381e0d80f07f8d7b902896e98c6ad8658017"
+    }
+  }
+}

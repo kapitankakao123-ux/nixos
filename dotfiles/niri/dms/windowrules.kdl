@@ -1,0 +1,80 @@
+// DMS Window Rules - Managed by DankMaterialShell
+// Do not edit manually - changes may be overwritten
+
+// @id=wr_1788196671409030869 @name=zen
+window-rule {
+    match app-id="^zen$" title="Picture-in-Picture"
+    opacity 0.29
+    open-floating true
+    variable-refresh-rate true
+    scroll-factor 1.00
+    geometry-corner-radius 20
+    min-width 70
+    min-height 120
+    background-effect {
+        blur true
+        xray true
+    }
+    default-floating-position x=0 y=0 relative-to="bottom-right"
+}
+
+// @id=wr_1788200933502382405 @name=Rule
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+    tiled-state true
+}
+
+// @id=wr_1788291626816202057 @name=zen
+window-rule {
+    match app-id="^zen$"
+    opacity 0.94
+    open-maximized true
+    open-on-workspace "browser"
+    tiled-state true
+    background-effect {
+        blur true
+        xray true
+    }
+}
+
+// @id=wr_1788293751321433638 @name=steam
+window-rule {
+    match app-id="^steam$"
+    opacity 0.80
+    open-maximized true
+    open-on-workspace "steam"
+    scroll-factor 1.00
+    background-effect {
+        blur true
+        xray true
+        noise 0.05
+        saturation 1
+    }
+}
+
+// @id=wr_1788294206618593211 @name=com.mitchellh.ghostty
+window-rule {
+    match app-id="^com.mitchellh.ghostty$"
+    opacity 0.70
+    background-effect {
+        blur true
+        xray true
+    }
+}
+
+// @id=wr_1788294531236070666 @name=com.danklinux.dms
+window-rule {
+    match app-id="^com.danklinux.dms$"
+    opacity 0.90
+    background-effect {
+        blur true
+        xray true
+    }
+}
+
+// @id=dms-floating-windows @name=DMS Floating Windows
+window-rule {
+    match app-id="^com.danklinux.dms$"
+    open-floating true
+}
