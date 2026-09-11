@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/Общее/Грабли.md",
+                "file": "docs/00-Проект.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Грабли"
+              "title": "00-Проект"
             }
           }
         ]
@@ -209,9 +209,10 @@
   },
   "active": "e4d15a103435d899",
   "lastOpenFiles": [
+    "docs/Машины/deskjet/deskjet.md",
+    "docs/Общее/Грабли.md",
     "docs/Общее/Бэкапы.md",
     "CLAUDE.md",
-    "docs/Машины/deskjet/deskjet.md",
     "docs/Машины/deskjet",
     "sedXhwmwK",
     "docs/Машины/pintu/sedc3JdPc",
@@ -228,7 +229,6 @@
     "docs/Машины/kitjet/Home-Assistant.md",
     "docs/Машины/kitjet/ZFS-хранилище.md",
     "docs/Машины/kitjet/kitjet.md",
-    "docs/Общее/Грабли.md",
     "docs/Машины/pintu/Архив",
     "docs/Машины/pintu",
     "docs/Машины/kitjet",

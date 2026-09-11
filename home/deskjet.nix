@@ -28,7 +28,7 @@
     # если нужен именно он — есть во flatpak.
 
     # ── Работа ───────────────────────────────────────────
-    remmina              # RDP
+    # remmina (RDP) — в home/common.nix: нужен на обеих машинах.
     winbox4              # MikroTik, нативный, без wine
     libreoffice-fresh
 
