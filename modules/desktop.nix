@@ -33,6 +33,12 @@
     variant = "";
   };
 
+  # XWayland для niri. Встроенного XWayland у niri нет, и X11-приложения
+  # (Steam, старые игры и тулкиты) падают с «Unable to open a connection to X».
+  # xwayland-satellite поднимает X-сервер по требованию; niri запускает его
+  # сам при старте, если бинарь есть в PATH, и выставляет DISPLAY потомкам.
+  environment.systemPackages = [ pkgs.xwayland-satellite ];
+
   xdg.portal = {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
