@@ -4,9 +4,10 @@ tags: [хост, deskjet, nixos, установка, гайд]
 
 # deskjet — домашний ПК
 
-> **Статус: готово к установке** (2026-09-11). Сейчас на машине Arch.
-> Конфиг NixOS собран на kitjet, бэкап домашней папки на `tank` проверен.
-> Осталось загрузить установщик и поставить.
+> **Статус: NixOS стоит и работает** (2026-09-13). Машина загружается с
+> ядра zen 7.1.10, `/home` с Arch подхватился целиком, репозиторий склонирован
+> в `~/nixos` — теперь рабочая копия есть и здесь, не только на kitjet.
+> Осталось довести мелочи из раздела «После установки».
 
 Имя — пара к `kitjet`: кухонный и настольный. Раньше звался `gadnix`,
 рабочее имя `desktop`.
@@ -209,24 +210,136 @@ Documents 1859, Pictures 530, `.ssh` 8, `.gnupg` 4.
 
 Датасет отдельный — после успешной установки его можно удалить одной
 командой `zfs destroy`.
+### Сама установка — выполнено (2026-09-12)
 
-### Сама установка
+- [x] Загрузиться с установщика NixOS
+- [x] Форматировать **только** `p1` и `p2` с метками `BOOT` и `deskjet`
+- [x] Смонтировать `p3` в `/mnt/home`, **не форматируя**
+- [x] Сверить `hardware-configuration.nix` с выводом `nixos-generate-config`
+- [x] `nixos-install --flake`
 
-> Раздел будет дополнен по факту.
+План сработал буквально: `p3` сохранил свой UUID `be7721f1-…`, метки `BOOT`
+и `deskjet` на месте, `/home` подхватился со всеми настройками — niri, DMS,
+ключи, профиль Zen, библиотека Steam. Ничего не перекачивалось.
 
-- [ ] Загрузиться с установщика NixOS
-- [ ] Форматировать **только** `p1` и `p2` с метками `BOOT` и `deskjet`
-- [ ] Смонтировать `p3` в `/mnt/home`, **не форматируя**
-- [ ] Сверить `hardware-configuration.nix` с выводом `nixos-generate-config`
-- [ ] `nixos-install --flake`
+Место по факту:
 
-## После
+| | размер | занято |
+|---|---|---|
+| `/boot` (p1) | 1 ГБ | 75 МБ |
+| `/` (p2) | 50 ГБ | **13 ГБ**, из них `/nix/store` 21 ГБ (дедуплицирован) |
+| `/home` (p3) | 903 ГБ | 529 ГБ |
+
+Оценка «20 ГБ за поколение» подтвердилась: 50 ГБ под корень — с запасом.
+Ядро — zen 7.1.10, как и планировалось.
+
+## После установки
+
+### XWayland: Steam не запускался
+
+Первое, на чём споткнулись (2026-09-12). Steam молча закрывался, а в
+zenity-окне висело `Unable to open a connection to X`.
+
+Причина: **у niri нет встроенного XWayland.** На Arch его поднимал
+`xwayland-satellite`, поставленный отдельно, — при переносе конфига он
+потерялся, потому что в `programs.niri.enable` не входит. `DISPLAY` в сессии
+был пуст, `/tmp/.X11-unix` пуст, а Steam — чистое X11-приложение.
+
+Лечение — одна строка в `modules/desktop.nix` (модуль общий, kitjet получит
+то же самое):
+
+```nix
+environment.systemPackages = [ pkgs.xwayland-satellite ];
+```
+
+Отдельно прописывать запуск не нужно: niri сам стартует `xwayland-satellite`,
+если находит бинарь в `PATH`, и выставляет `DISPLAY` потомкам. После
+пересборки в сессии видно `xwayland-satellite :0 -listenfd …` — `-listenfd`
+и означает, что процесс запущен композитором, а не руками.
+
+**Принцип:** под Wayland отсутствие X11-приложения выглядит не как «нет
+пакета», а как «приложение не стартует». Проверять `echo $DISPLAY` первым
+делом.
+
+### Sunshine: сервис поднялся, захват — нет
+
+Включён 2026-09-13 (`services.sunshine` с `capSysAdmin` и `openFirewall`).
+Юнит пользовательский, `WantedBy=graphical-session.target`, так что после
+`switch` он ждёт следующего входа в сессию — либо `systemctl --user start sunshine`.
+
+Сервис поднялся, но видео не отдавал:
+
+```
+Error: [portalgrab] Restore token is not a valid UUID string
+Error: [portalgrab] RemoteDesktop CreateSession failed with response code: 2
+Fatal: Unable to find display or encoder during startup
+```
+
+Две причины, обе от переезда:
+
+1. `~/.config/sunshine/` приехал с Arch вместе с `/home`. В нём лежали
+   `capture = portal`, `output_name = 0` и `portal_token` от **другого**
+   backend портала — отсюда «not a valid UUID».
+2. Портал на niri неполный: `org.gnome.Mutter.ScreenCast` niri реализует
+   (её и берёт `xdg-desktop-portal-gnome`), а `org.gnome.Mutter.RemoteDesktop`
+   — **нет**. Sunshine же в режиме `portal` идёт именно через RemoteDesktop.
+
+Проверка, кто чем владеет на шине:
+
+```bash
+busctl --user status org.gnome.Mutter.ScreenCast     # PID niri
+busctl --user status org.gnome.Mutter.RemoteDesktop  # No such device or address
+```
+
+Решение — не портал, а `wlr-screencopy`, который niri поддерживает
+(`zwlr_screencopy_manager_v1` version 3). В `~/.config/sunshine/sunshine.conf`:
+
+```
+capture = wlr
+output_name = DP-1     # имя выхода из `niri msg outputs`, было «0» с Arch
+```
+
+Плюс убран `portal_token` (сохранён как `portal_token.arch-bak`).
+После этого энкодеры нашлись на самой карте:
+
+```
+Found H.264 encoder: h264_vaapi [vaapi]
+Found HEVC encoder: hevc_vaapi [vaapi]
+Found AV1 encoder:  av1_vaapi  [vaapi]
+vaapi vendor: Mesa … AMD Radeon RX 9060 XT (radeonsi, gfx1200)
+```
+
+Web-интерфейс — https://localhost:47990, порты 47989/47990 слушаются.
+`nvenc` пробуется первым и падает на `Cannot load libcuda.so.1` — это
+нормально, карта AMD, сообщение информационное.
+
+> **Хвост:** рабочий `sunshine.conf` лежит в `/home`, а не в git. Кандидат —
+> `services.sunshine.settings` в `hosts/deskjet`, тогда захват и выход
+> описаны декларативно. Не сделано: Web-UI пишет в тот же файл, надо
+> решить, кто из них главный.
+
+### Устаревшие опции — вычищены
+
+`nixos-rebuild build --flake .#deskjet` ругался тремя warning'ами;
+исправлено 2026-09-13, сборка теперь чистая:
+
+| было | стало | где |
+|---|---|---|
+| `programs.git.userName` | `programs.git.settings.user.name` | `home/common.nix` |
+| `programs.git.userEmail` | `programs.git.settings.user.email` | `home/common.nix` |
+| `inherit (final) system` | `inherit (final.stdenv.hostPlatform) system` | `modules/common.nix` |
+
+Оба файла общие, так что kitjet чинится тем же коммитом.
+
+### Осталось
 
 - [x] Проверить Steam и Proton
 - [x] Проверить VIA — udev-правила из `hardware.keyboard.qmk.enable`
-- [ ] Sunshine — в конфиге закомментирован, включить отдельно
-- [ ] Устаревшие опции в общих модулях: `programs.git.userEmail` →
-      `programs.git.settings.user.email`, `system` в оверлее → `stdenv.hostPlatform.system`
+- [x] Sunshine — включён, захват через `wlr`
+- [x] Устаревшие опции в общих модулях
+- [ ] Проверить `nixos-rebuild switch` на kitjet после общих правок
+      (`modules/desktop.nix`, `modules/common.nix`, `home/common.nix`)
 - [ ] Удалить `tank/backup-deskjet`, когда всё проверено
+- [ ] Свести расхождение с `origin/master` (см. [[Репозиторий]])
 
-[[00-Проект]] · [[Репозиторий]] · [[kitjet]]
+[[00-Проект]] · [[Репозиторий]] · [[kitjet]] · [[Грабли]]

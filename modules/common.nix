@@ -21,7 +21,7 @@
   nixpkgs.overlays = [
     (final: prev: {
       unstable = import inputs.nixpkgs-unstable {
-        inherit (final) system;
+        inherit (final.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
     })
@@ -51,11 +51,14 @@
     isNormalUser = true;
     description = "gadjet";
     extraGroups = [ "networkmanager" "wheel" ];
-    # Ключи для входа по ssh. Пока пусто → PasswordAuthentication ниже
-    # остаётся включённым. Как впишешь ключ и проверишь вход —
-    # выключай пароли (см. комментарий в services.openssh).
+    # Ключи для входа по ssh. Ключ один на все машины: он лежит в `/home`
+    # на deskjet и пережил переустановку вместе с разделом, комментарий
+    # `gadjet@GadjetArch` — просто его имя с Arch, менять не нужно.
+    # Через этот ключ ходит colmena. Пароли (PasswordAuthentication ниже)
+    # выключать только после того, как вход по ключу проверен на ОБЕИХ
+    # машинах: иначе останешься без доступа к дальней.
     openssh.authorizedKeys.keys = [
-      # "ssh-ed25519 AAAA... gadjet@gadnix"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHMlFT5xnJHR3MgFqzytZjQuhRjC/ZKC1sYaN1cyyATx gadjet@GadjetArch"
     ];
   };
 

@@ -1,0 +1,4 @@
+# Символьные ссылки от `nixos-rebuild build` / `nix build`.
+# В git им делать нечего: это указатели в /nix/store, у каждой машины свои.
+result
+result-*

@@ -84,7 +84,9 @@
   # Пример декларативной программы: home-manager сам генерирует конфиг
   programs.git = {
     enable = true;
-    userName = "gadjet";
-    userEmail = "kapitankakao123@gmail.com";
+    settings.user = {
+      name = "gadjet";
+      email = "kapitankakao123@gmail.com";
+    };
   };
 }
