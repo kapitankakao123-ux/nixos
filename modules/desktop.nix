@@ -24,6 +24,17 @@
   # поэтому здесь, а не в home. Сам dolphin — в home/common.nix.
   services.udisks2.enable = true;
 
+  # Программа запроса пароля для ssh. Без неё ssh и ssh-add с ключом,
+  # защищённым паролем, ВИСНУТ: спросить пароль нечем, в отладке видно
+  #   ssh_askpass: exec(): No such file or directory
+  # То же самое ловил агент gnome-keyring, когда пытался подтвердить
+  # подпись — окно показывать было некому, и подвисал весь агент.
+  # ksshaskpass выбран под Qt-стек (DMS, Dolphin).
+  programs.ssh = {
+    enableAskPassword = true;
+    askPassword = "${pkgs.kdePackages.ksshaskpass}/bin/ksshaskpass";
+  };
+
   security.polkit.enable = true;
   services.gnome.gnome-keyring.enable = true;   # хранилище паролей для приложений
 

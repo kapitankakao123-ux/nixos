@@ -92,12 +92,23 @@
   # будет удалена, короткие имена заработают и сами — блок можно убрать.
   programs.ssh = {
     enable = true;
+    # ВЫКЛЮЧЕНО намеренно. Иначе home-manager дописывает устаревший блок
+    # Host * со своими умолчаниями, среди которых AddKeysToAgent yes.
+    # С ним КАЖДЫЙ ssh лезет добавлять ключ в агент gnome-keyring, тот
+    # просит подтверждение графическим окном, показывать его под niri
+    # некому — и ssh висит. Ключ у нас без пароля, агент ему не нужен.
+    enableDefaultConfig = false;
+    # "no", а не "yes": с "yes" ssh при каждом подключении лезет в агент
+    # gnome-keyring за подтверждением, и без askpass-программы виснет.
+    addKeysToAgent = "no";
     matchBlocks = {
       kitjet.hostname  = "kitjet.local";
       deskjet.hostname = "deskjet.local";
       pintu.hostname   = "pintu.local";
     };
   };
+ 
+  services.ssh-agent.enable = true;
 
   programs.git = {
     enable = true;
