@@ -5,11 +5,10 @@
 
 let
   # Публичные ключи машин, с которых разрешён вход. Один список — и для
-  # gadjet, и для root, чтобы не разъехались.
-  sshKeys = [
+    sshKeys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKgXUO18pBO1bI3GGjyjPzBfTF9jrKuiB7KFPsAOnPve gadjet@deskjet"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMiFYOvyGtcL0QuzIT7UOfYoGbLpkce5YluNI7uafSjg gadjet@kitjet"
-  ];
+    ];
 in
 {
   # ── Nix ──────────────────────────────────────────────────────
