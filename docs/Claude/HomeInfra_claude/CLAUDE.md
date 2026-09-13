@@ -31,11 +31,18 @@
 ## Команды
 
 ```bash
-colmena apply --on <хост>                      # деплой
-colmena apply-local                            # локально
-sudo nixos-rebuild switch --flake ~/nixos      # локально, по hostname
+colmena apply --on deskjet                     # развернуть на одной машине
+colmena apply                                  # на всех сразу
+colmena build                                  # только собрать, ничего не трогая
+colmena apply-local --sudo                     # на той, за которой сидишь
+colmena exec --on deskjet -- systemctl --failed # команда на машинах
+sudo nixos-rebuild switch --flake ~/nixos      # локально, запасной путь
 nix flake update                               # обновить inputs
 ```
+
+⚠️ `nixos-rebuild switch --flake .#deskjet` **на другой машине применит конфиг deskjet К НЕЙ**:
+имя после `#` — это имя конфигурации, а не адрес цели. Машина сменит hostname и всё остальное.
+Для удалённой машины — либо colmena, либо `nixos-rebuild --target-host root@deskjet.local`.
 
 ## Правила
 
