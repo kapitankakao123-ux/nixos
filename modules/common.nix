@@ -62,22 +62,13 @@ in
     isNormalUser = true;
     description = "gadjet";
     extraGroups = [ "networkmanager" "wheel" ];
-<<<<<<< HEAD
-    # Ключи для входа по ssh. Ключ один на все машины: он лежит в `/home`
-    # на deskjet и пережил переустановку вместе с разделом, комментарий
-    # `gadjet@GadjetArch` — просто его имя с Arch, менять не нужно.
-    # Через этот ключ ходит colmena. Пароли (PasswordAuthentication ниже)
-    # выключать только после того, как вход по ключу проверен на ОБЕИХ
-    # машинах: иначе останешься без доступа к дальней.
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHMlFT5xnJHR3MgFqzytZjQuhRjC/ZKC1sYaN1cyyATx gadjet@GadjetArch"
-    ];
-=======
     # Ключи для входа по ssh — публичные, секретом не являются.
-    # PasswordAuthentication ниже пока ОСТАЁТСЯ включённым: выключать,
-    # только когда вход по ключу проверен на каждой машине.
+    # Список общий (sshKeys выше): в нём ключи ОБЕИХ машин, чтобы деплоить
+    # можно было в любую сторону. Через эти ключи ходит colmena.
+    # Пароли (PasswordAuthentication ниже) выключать только после того, как
+    # вход по ключу проверен на ОБЕИХ машинах: иначе останешься без доступа
+    # к дальней.
     openssh.authorizedKeys.keys = sshKeys;
->>>>>>> 8882a7c (ssh-ключи kitjet и deskjet, Sunshine на deskjet)
   };
 
   # root по ключу — для деплоя с другой машины (nixos-rebuild --target-host,
