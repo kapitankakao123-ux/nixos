@@ -7,5 +7,6 @@
 
   home.packages = with pkgs; [
     mpv        # кино на телевизор
+    moonlight-qt
   ];
 }
