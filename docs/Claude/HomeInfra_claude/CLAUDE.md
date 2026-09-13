@@ -7,11 +7,7 @@
 | Хост | Арх | Состояние | Роль | Оболочка |
 |---|---|---|---|---|
 | `kitjet` | x86_64 | **работает** | домашний сервер: ZFS-хранилище (tank), libvirt/KVM, Jellyfin, HAOS (виртуалка), рабочее место | niri + DMS |
-<<<<<<< HEAD
-| `deskjet` | x86_64 | **работает** | ПК: игры, браузер, работа (RDP, WinBox, LibreOffice, VS Code) | niri + DMS |
-=======
 | `deskjet` | x86_64 | **работает** — NixOS, `/home` сохранён с Arch | ПК: игры (Steam, Proton), браузер, работа (RDP, WinBox, LibreOffice, VS Code), Sunshine | niri + DMS |
->>>>>>> 9a486f5 (docs: deskjet установлен через kexec, /home сохранён)
 | `pintu` (бывш. `rpinix`) | aarch64 | **Ubuntu Server 26.04.1** (не NixOS) | Raspberry Pi 5: контейнеры (Incus), 7" DSI. NixOS отложен — нет DSI в mainline, см. [[pintu]], [[NixOS-на-Pi5]] | нет / по желанию |
 
 Пользователь везде `gadjet`. `kitjet` и `deskjet` — NixOS на стабильной ветке nixpkgs 26.05. `pintu` (бывший `rpinix`) — **Ubuntu**, во flake не участвует (конфиг `hosts/rpinix` сохранён на случай возврата к NixOS).
@@ -44,6 +40,8 @@ nix flake update                               # обновить inputs
 ## Правила
 
 - Новый файл **обязан** попасть в git (`git add`), иначе flake его не видит.
+- `git pull` перед правкой, `git push` сразу после коммита: рабочих копий две (kitjet и deskjet), несинхронизированный коммит — будущее расхождение.
+- Хук от маркеров конфликта: `git config core.hooksPath .githooks` (один раз на машине). Маркеры в коммите ломают сборку молча — `git status` покажет «clean».
 - `system.stateVersion` не менять никогда. `networking.hostId` уникален на каждой машине.
 - Секреты в репозиторий не коммитить. `sops-nix` пока не подключён — до этого только пути к файлам вне git.
 - Общая настройка идёт в `modules/`, специфика машины — в `hosts/`. Дублирование между хостами — сигнал вынести в модуль.
