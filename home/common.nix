@@ -84,6 +84,21 @@
   };
 
   # Пример декларативной программы: home-manager сам генерирует конфиг
+  # ── ssh: короткие имена машин ──────────────────────────────
+  # Роутер держит устаревшую запись аренды и зовёт deskjet прежним
+  # именем GadjetArch, поэтому короткое `ssh deskjet` не разрешается.
+  # Имена .local работают всегда (mDNS, avahi в modules/common.nix),
+  # так что просто подставляем их. Когда старая аренда на роутере
+  # будет удалена, короткие имена заработают и сами — блок можно убрать.
+  programs.ssh = {
+    enable = true;
+    matchBlocks = {
+      kitjet.hostname  = "kitjet.local";
+      deskjet.hostname = "deskjet.local";
+      pintu.hostname   = "pintu.local";
+    };
+  };
+
   programs.git = {
     enable = true;
     settings.user = {
