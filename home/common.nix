@@ -54,6 +54,7 @@
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
     vscode
     gnome-disk-utility
+    colmena              # развёртывание по сети, см. vault: Общее/Репозиторий.md
     google-chrome
     remmina        
 

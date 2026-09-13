@@ -57,6 +57,15 @@ in
   # hostName задаётся в hosts/<имя>/default.nix — он и есть «какая машина».
   networking.networkmanager.enable = true;
 
+  # Отдавать своё имя DHCP-серверу, чтобы роутер зарегистрировал его в DNS
+  # и работало короткое имя (ssh deskjet, а не только deskjet.local).
+  # NetworkManager 1.52+ по умолчанию имя НЕ шлёт — из-за этого deskjet
+  # не попал в DNS роутера, хотя kitjet и pintu там есть: у них сеть
+  # настраивает не NM. Свойство -v2 — новое имя старого dhcp-send-hostname.
+  networking.networkmanager.settings.connection = {
+    "ipv4.dhcp-send-hostname-v2" = true;
+  };
+
   # mDNS: имена вида deskjet.local разрешаются без участия роутера.
   # Нужно для colmena — она ходит на хосты по имени, а адреса от DHCP
   # у нас уже не раз менялись. nssmdns4 добавляет mdns в nsswitch.conf,
