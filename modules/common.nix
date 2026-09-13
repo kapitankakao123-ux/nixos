@@ -57,6 +57,21 @@ in
   # hostName задаётся в hosts/<имя>/default.nix — он и есть «какая машина».
   networking.networkmanager.enable = true;
 
+  # mDNS: имена вида deskjet.local разрешаются без участия роутера.
+  # Нужно для colmena — она ходит на хосты по имени, а адреса от DHCP
+  # у нас уже не раз менялись. nssmdns4 добавляет mdns в nsswitch.conf,
+  # иначе демон работает, но getent/ping про него не знают.
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;      # UDP 5353
+    publish = {
+      enable = true;
+      addresses = true;       # отвечать на запросы своего имени
+      workstation = true;
+    };
+  };
+
   # ── Пользователь ─────────────────────────────────────────────
   users.users.gadjet = {
     isNormalUser = true;

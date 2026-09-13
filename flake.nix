@@ -79,6 +79,23 @@
         };
       };
 
+      # Список модулей одной машины. Общий для nixosConfigurations и colmena,
+      # чтобы «что входит в машину» было описано в ОДНОМ месте.
+      hostModules = name: cfg:
+        [ ./hosts/${name} ] ++ (cfg.extraModules or [ ]) ++ (
+          # Home Manager только если cfg.home != null (есть пользовательское окружение)
+          if cfg.home != null then [
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
+              home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
+              home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
+              home-manager.extraSpecialArgs = { inherit inputs; };
+              home-manager.users.gadjet = cfg.home;
+            }
+          ] else [ ]
+        );
+
       # Сборка одной системы из описания выше.
       mkHost = name: cfg:
         let
@@ -94,27 +111,50 @@
 
           # modules — список кусков конфигурации, они СЛИВАЮТСЯ в один
           # атрибут-сет. Порядок не важен, важна уникальность присваиваний.
-          modules = [
-            ./hosts/${name}
-          ] ++ (cfg.extraModules or [ ]) ++ (
-            # Home Manager только если cfg.home != null (есть пользовательское окружение)
-            if cfg.home != null then [
-              home-manager.nixosModules.home-manager
-              {
-                home-manager.useGlobalPkgs = true;    # тот же nixpkgs, что у системы
-                home-manager.useUserPackages = true;  # пакеты в /etc/profiles, а не в ~/.nix-profile
-                home-manager.backupFileExtension = "hm-bak"; # не падать, если файл уже есть
-                home-manager.extraSpecialArgs = { inherit inputs; };
-                home-manager.users.gadjet = cfg.home;
-              }
-            ] else []
-          );
+          modules = hostModules name cfg;
         };
+
+      # Машины, которые разворачиваются по сети. rpinix сюда НЕ входит:
+      # железо теперь под Ubuntu (см. vault: Машины/pintu), а конфиг оставлен
+      # на случай возврата к NixOS.
+      deployHosts = nixpkgs.lib.filterAttrs (n: _: n != "rpinix") hosts;
     in
     {
       nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;
 
-      # TODO: сюда же — ноды colmena из того же hosts, когда появится
-      # вторая машина. Пока деплоить нечего: nixos-rebuild локально.
+      # ── colmena ───────────────────────────────────────────────
+      # Разворачивание по сети: собирается ЗДЕСЬ, на целевую машину уезжает
+      # готовый результат. Цель указывается явно (deployment.targetHost),
+      # поэтому перепутать «собрать для X» и «превратить себя в X» нельзя —
+      # в отличие от nixos-rebuild --flake .#X без --target-host.
+      #
+      #   colmena apply --on deskjet      развернуть на одной машине
+      #   colmena apply                   на всех
+      #   colmena build                   только собрать, ничего не трогая
+      #   colmena apply-local --sudo      на той, за которой сидишь
+      colmena = {
+        meta = {
+          # Базовый набор пакетов для сборки нод.
+          nixpkgs = import nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
+          # Те же specialArgs, что у nixosConfigurations, иначе модули
+          # не найдут inputs.dms и упадут на вычислении.
+          specialArgs = { inherit inputs; };
+        };
+      } // nixpkgs.lib.mapAttrs
+        (name: cfg: {
+          deployment = {
+            # Имя .local разрешается через mDNS (avahi в modules/common.nix).
+            # Адреса от DHCP у нас уже не раз менялись, поэтому не IP.
+            targetHost = "${name}.local";
+            targetUser = "root";   # ключ root'а прописан в modules/common.nix
+            # Разрешить разворачивать саму себя через apply-local.
+            allowLocalDeployment = true;
+          };
+          imports = hostModules name cfg;
+        })
+        deployHosts;
     };
 }
