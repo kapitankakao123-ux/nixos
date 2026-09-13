@@ -96,5 +96,12 @@ in
     vim
     wget
     curl
+
+    # Описание терминала ghostty (TERM=xterm-ghostty) — СИСТЕМНО, а не
+    # только в профиле пользователя. Иначе при входе по ssh под другим
+    # пользователем или под root ncurses не знает такого терминала, и
+    # nano/htop падают с "cannot initialize terminal type".
+    # Пакет крошечный: это только terminfo, без самого терминала.
+    ghostty.terminfo
   ];
 }
