@@ -134,6 +134,65 @@ sudo virsh dumpxml haos | grep -E 'secure-boot|<loader'
 - [ ] Старые сервисы (MQTT, node-red, pairdrop, webdav, nginx) — вернуть как
       add-on'ы HA или контейнерами Incus на [[pintu]]: архивы Proxmox —
       это обычные rootfs, Incus умеет их импортировать
+## Лишний HA в контейнере — убран (2026-09-13)
+
+`modules/virtualisation.nix` держал два блока, приехавших копипастой из вики:
+`virtualisation.oci-containers.containers.homeassistant` (образ
+`ghcr.io/home-assistant/home-assistant:stable`, `TZ = Europe/Berlin`,
+`--device=/dev/ttyACM0` с комментарием «Example, change this to match your own
+hardware») и пустой `services.home-assistant`.
+
+То есть **третий Home Assistant** в конфиге при одном настоящем — HAOS в VM.
+Контейнер падал на каждом старте:
+
+```
+Error: stat /dev/ttyACM0: no such file or directory
+podman-homeassistant.service: Main process exited, code=exited, status=125
+podman-homeassistant.service: start-limit-hit
+```
+
+Устройства `/dev/ttyACM0` на kitjet нет вообще: донгл — CP2102, он приходит как
+`/dev/ttyUSB0` (`/dev/serial/by-id/usb-Silicon_Labs_CP2102_…`). И чинить путь
+было бы ошибкой: донгл уже проброшен в VM, два HA на одно устройство не делятся.
+
+Из-за этого юнита kitjet висел в `degraded` — при живых остальных сервисах:
+
+```bash
+systemctl is-system-running   # degraded
+systemctl --failed            # podman-homeassistant.service
+```
+
+Оба блока удалены. **Проверять `systemctl is-system-running` после каждого
+`switch`** — упавший юнит сам о себе не скажет.
+
+## Core не отвечает (открыто с 2026-09-13)
+
+VM `haos` работает, но веб-интерфейс на `192.168.10.129:8123` недоступен —
+`connection refused`. При этом сама HAOS жива:
+
+| проверка | результат |
+|---|---|
+| `virsh -c qemu:///system dominfo haos` | running, 4 ГБ, CPU time 10460 с |
+| `ping 192.168.10.129` | 0% потерь |
+| порт 4357 (observer) | открыт: Supervisor **Connected**, Support **Supported**, Health **Healthy** |
+| порт 8123 (core) | **закрыт** |
+| порт 22 | закрыт (add-on SSH не ставился) |
+
+Значит, упала не виртуалка и не supervisor, а именно **Home Assistant Core**.
+Смотреть изнутри — консолью VM с kitjet:
+
+```bash
+virsh -c qemu:///system console haos   # выход: Ctrl+]
+# в HAOS:
+ha core info
+ha core logs
+ha core start
+```
+
+Связи с убранным контейнером нет: тот никогда не стартовал и донгл не отнимал.
+Возможная причина — незавершённый онбординг (первый пункт «Что дальше» так и
+не отмечен) либо падение после обновления.
+
 
 ## Сеть kitjet: трафик всё ещё идёт через Wi-Fi
 
@@ -146,5 +205,6 @@ default via 192.168.10.1 dev br0         metric 1003
 
 На VM это не влияет — она на мосту. Но сам kitjet ходит в сеть по Wi-Fi.
 Для сервера это неправильно; поправить — отключить Wi-Fi или поменять метрики.
+
 
 [[00-Проект]] · [[kitjet]] · [[pintu]] · [[Грабли]]

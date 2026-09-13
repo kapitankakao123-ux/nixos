@@ -337,9 +337,16 @@ Web-интерфейс — https://localhost:47990, порты 47989/47990 сл�
 - [x] Проверить VIA — udev-правила из `hardware.keyboard.qmk.enable`
 - [x] Sunshine — включён, захват через `wlr`
 - [x] Устаревшие опции в общих модулях
-- [ ] Проверить `nixos-rebuild switch` на kitjet после общих правок
-      (`modules/desktop.nix`, `modules/common.nix`, `home/common.nix`)
+- [x] `switch` на deskjet и на kitjet после общих правок
+      (`modules/desktop.nix`, `modules/common.nix`, `home/common.nix`) — 2026-09-13
+- [x] Расхождение с `origin/master` сведено
+- [x] Вход по ключу с deskjet на kitjet проверен: `ssh kitjet` без пароля
 - [ ] Удалить `tank/backup-deskjet`, когда всё проверено
-- [ ] Свести расхождение с `origin/master` (см. [[Репозиторий]])
+
+**Про Sunshine решено:** главный — Web-UI. `~/.config/sunshine/sunshine.conf`
+правится через интерфейс, в nix переносится только сам факт включения сервиса
+(`services.sunshine` в `hosts/deskjet`). Значит, файл живёт в `/home` и в git
+не попадает — при переустановке его вернёт раздел `p3`, как вернул в этот раз
+(вместе с настройками от Arch, которые и пришлось чинить).
 
 [[00-Проект]] · [[Репозиторий]] · [[kitjet]] · [[Грабли]]

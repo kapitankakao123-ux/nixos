@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "HomeInfra_claude/docs/Машины/deskjet/deskjet.md",
+                "file": "HomeInfra_claude/docs/00-Проект.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "deskjet"
+              "title": "00-Проект"
             }
           }
         ]
@@ -188,8 +188,19 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "8dbe84caaeeec63e",
+  "active": "7cb4d505652b0abc",
   "lastOpenFiles": [
+    "HomeInfra_claude/docs/Машины/deskjet/deskjet.md.tmp.83008.ab1aeb71cded",
+    "HomeInfra_claude/docs/00-Проект.md.tmp.83008.7d7d044c019b",
+    "HomeInfra_claude/docs/Общее/Грабли.md.tmp.83008.b6b06d7397ff",
+    "HomeInfra_claude/docs/Общее/Бэкапы.md",
+    "HomeInfra_claude/docs/Общее/Репозиторий.md",
+    "HomeInfra_claude/docs/Машины/pintu/pintu.md",
+    "HomeInfra_claude/docs/Машины/pintu/NixOS-на-Pi5.md",
+    "HomeInfra_claude/docs/Машины/kitjet/ZFS-хранилище.md",
+    "HomeInfra_claude/docs/Машины/kitjet/kitjet.md",
+    "HomeInfra_claude/docs/Машины/kitjet/Home-Assistant.md",
+    "HomeInfra_claude/docs/Машины/deskjet/deskjet.md",
     "HomeInfra_claude/docs/sed9Bunr7",
     "HomeInfra_claude/docs/sedMTd1Mg",
     "HomeInfra_claude/docs/sedTAr64p",
@@ -197,9 +208,7 @@
     "HomeInfra_claude/sedQlI7hx",
     "HomeInfra_claude/docs/Общее/Грабли.md.tmp.71993.efc07877b2e3",
     "HomeInfra_claude/docs/Машины/deskjet/deskjet.md.tmp.71993.b8b4f604a372",
-    "HomeInfra_claude/docs/Общее/Бэкапы.md",
     "HomeInfra_claude/docs/Общее/Грабли.md",
-    "HomeInfra_claude/docs/Общее/Репозиторий.md",
     "HomeInfra_claude/docs/00-Проект.md"
   ]
 }

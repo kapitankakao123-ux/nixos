@@ -11,8 +11,20 @@
   # ВАЖНО: ZFS — модуль вне дерева ядра, он отстаёт от свежих ядер.
   # Поэтому в hosts/kitjet убран boot.kernelPackages = linuxPackages_latest:
   # с ним сборка падает на «zfs not supported on kernel X».
-  # Здесь фиксируем ядро, с которым ZFS точно дружит.
-  boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
+  #
+  # Раньше тут стоял `config.boot.zfs.package.latestCompatibleLinuxPackages`.
+  # Он объявлен устаревшим и теперь просто указывает на ядро по умолчанию —
+  # то есть ровно на `pkgs.linuxPackages`, которое и работает на kitjet (6.18).
+  # Пишем явно: то же самое ядро, но без warning'а и без иллюзии, что nixpkgs
+  # что-то подбирает за нас. Если ZFS отстанет от дефолтного ядра — пинить
+  # конкретный выпуск, например `pkgs.linuxPackages_6_12`.
+  boot.kernelPackages = pkgs.linuxPackages;
+
+  # Корень kitjet на btrfs, ZFS-пул `tank` импортируется уже после загрузки,
+  # поэтому принудительный импорт корневого пула не нужен. С 26.11 `false`
+  # станет дефолтом; ставим явно, чтобы не ловить warning и не менять
+  # поведение при обновлении.
+  boot.zfs.forceImportRoot = false;
 
   # Пулы, которые импортируются на старте. Корневая ФС не на ZFS,
   # так что пул подключается уже после загрузки — если он не найдётся,

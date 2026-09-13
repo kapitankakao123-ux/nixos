@@ -23,32 +23,20 @@
   networking.networkmanager.unmanaged = [ "enp5s0" ];
   networking.bridges.br0.interfaces = [ "enp5s0" ];
   networking.interfaces.br0.useDHCP = true;
-  
-  virtualisation.oci-containers = {
-    backend = "podman";
-    containers.homeassistant = {
-      volumes = [ "home-assistant:/config" ];
-      environment.TZ = "Europe/Berlin";
-      image = "ghcr.io/home-assistant/home-assistant:stable"; # Warning: if the tag does not change, the image will not be updated
-      extraOptions = [ 
-        "--network=host" 
-        "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
-      ];
-    };
-  };
 
-  services.home-assistant = {
-    # opt-out from declarative configuration management
-    config = null;
-    lovelaceConfig = null;
-    # configure the path to your config directory
-    configDir = "/etc/home-assistant";
-    # specify list of components required by your configuration
-    extraComponents = [
-      "esphome"
-      "met"
-      "radio_browser"
-    ];
-  };
-
+  # ── Здесь НЕТ Home Assistant ──────────────────────────────
+  # Раньше в этом файле лежали два блока из вики, оставшиеся от копипасты:
+  # `virtualisation.oci-containers.containers.homeassistant` и
+  # `services.home-assistant`. Убраны 2026-09-13.
+  #
+  # Home Assistant на kitjet — это **HAOS в виртуалке** `haos` (см. vault:
+  # Машины/kitjet/Home-Assistant.md), и Zigbee-донгл проброшен туда же.
+  # Контейнер пытался забрать `/dev/ttyACM0` — устройства с таким именем на
+  # kitjet нет вовсе (донгл CP2102 приходит как `/dev/ttyUSB0`), падал с
+  # `status=125`, упирался в лимит рестартов и держал систему в `degraded`.
+  # Чинить его было нельзя: два HA на один донгл — это конфликт за устройство.
+  #
+  # Если когда-нибудь понадобится второй HA в контейнере, донгл пробрасывать
+  # по устойчивому пути `/dev/serial/by-id/usb-Silicon_Labs_CP2102_*`, а не по
+  # номеру `ttyUSB0`: номер меняется от порядка подключения.
 }
