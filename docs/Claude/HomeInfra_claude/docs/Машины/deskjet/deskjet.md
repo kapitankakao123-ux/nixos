@@ -222,8 +222,8 @@ Documents 1859, Pictures 530, `.ssh` 8, `.gnupg` 4.
 
 ## После
 
-- [ ] Проверить Steam и Proton
-- [ ] Проверить VIA — udev-правила из `hardware.keyboard.qmk.enable`
+- [x] Проверить Steam и Proton
+- [x] Проверить VIA — udev-правила из `hardware.keyboard.qmk.enable`
 - [ ] Sunshine — в конфиге закомментирован, включить отдельно
 - [ ] Устаревшие опции в общих модулях: `programs.git.userEmail` →
       `programs.git.settings.user.email`, `system` в оверлее → `stdenv.hostPlatform.system`

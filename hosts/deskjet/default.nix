@@ -89,7 +89,7 @@
   zramSwap.enable = true;
 
   # TODO: Sunshine (стриминг игр) — был на Arch. Включить отдельно:
-  # services.sunshine = { enable = true; capSysAdmin = true; openFirewall = true; };
+  services.sunshine = { enable = true; capSysAdmin = true; openFirewall = true; };
 
   # Маркер формата данных, а не версия ОС. НЕ МЕНЯТЬ НИКОГДА.
   system.stateVersion = "26.05";
