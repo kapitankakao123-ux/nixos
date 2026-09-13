@@ -61,9 +61,11 @@ in
   # и работало короткое имя (ssh deskjet, а не только deskjet.local).
   # NetworkManager 1.52+ по умолчанию имя НЕ шлёт — из-за этого deskjet
   # не попал в DNS роутера, хотя kitjet и pintu там есть: у них сеть
-  # настраивает не NM. Свойство -v2 — новое имя старого dhcp-send-hostname.
+  # настраивает не NM.
+  # ВНИМАНИЕ: ключ именно dhcp-send-hostname. Вариант с суффиксом -v2
+  # NM 1.56 не понимает — пишет в журнал "unknown key" и молча игнорирует.
   networking.networkmanager.settings.connection = {
-    "ipv4.dhcp-send-hostname-v2" = true;
+    "ipv4.dhcp-send-hostname" = true;
   };
 
   # mDNS: имена вида deskjet.local разрешаются без участия роутера.
