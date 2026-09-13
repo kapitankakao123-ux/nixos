@@ -7,11 +7,8 @@ let
   # Публичные ключи машин, с которых разрешён вход. Один список — и для
   # gadjet, и для root, чтобы не разъехались.
   sshKeys = [
-    # kitjet: создан 2026-09-11 для установки deskjet через kexec.
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPL3eyBKG1xsG/55hY1W8Bt35j+VJjLSxm1CU/FAJfMv gadjet@kitjet"
-    # deskjet: ключ пережил переустановку вместе с /home. Подпись в конце
-    # осталась от Arch (GadjetArch) — на работу ключа она не влияет.
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHMlFT5xnJHR3MgFqzytZjQuhRjC/ZKC1sYaN1cyyATx gadjet@GadjetArch"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKgXUO18pBO1bI3GGjyjPzBfTF9jrKuiB7KFPsAOnPve gadjet@deskjet"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMiFYOvyGtcL0QuzIT7UOfYoGbLpkce5YluNI7uafSjg gadjet@kitjet"
   ];
 in
 {
