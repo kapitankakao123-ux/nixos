@@ -12,9 +12,16 @@
   };
   programs.virt-manager.enable = true;
 
+
+  virtualisation.docker = {
+    enable = true;
+  };
+
   # Пользователь должен быть в этих группах, иначе virsh просит пароль
   # на каждое действие. Проверка: `groups`.
-  users.users.gadjet.extraGroups = [ "libvirtd" "kvm" ];
+  users.users.gadjet.extraGroups = [ "libvirtd" "kvm" "docker" ];
+
+
 
   # ── Мост br0 (опционально) ────────────────────────────────
   # Нужен, чтобы виртуалки получали адрес из домашней сети, а не NAT.
