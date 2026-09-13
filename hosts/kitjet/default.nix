@@ -47,6 +47,33 @@
     # Кэш и конфиги — в /var/lib/jellyfin/ (управляется systemd).
     # Медиа-библиотека — в /tank/media (добавляется в веб-интерфейсе).
   };
+  
+   # ── Контейнеры ───────────────────────────────────────────
+  # Декларативно, а не `docker run`: systemd поднимает их сам, они
+  # переживают перезагрузку, и «что крутится на машине» видно в git,
+  # а не в памяти демона. Правило то же, что и с LXC (см. CLAUDE.md).
+  #
+  # backend = "docker", потому что docker на kitjet уже включён в
+  # modules/virtualisation.nix. Podman сюда не тянем: oci-containers
+  # умеет только ОДИН backend на машину.
+  virtualisation.oci-containers = {
+    backend = "docker";
+    containers.pvzge = {
+      # PvZ2 Gardendless — браузерная переделка Plants vs Zombies 2.
+      # Тег ПРИБИТ намеренно: с `:latest` образ не обновится сам (nix не
+      # знает, что тег переехал), зато перестанет быть воспроизводимым —
+      # на разных машинах приедет разное. Обновление = правка версии тут.
+      image = "docker.io/gaozih/pvzge:v0.14.0";
+      # Внутри контейнера обычный веб-сервер на 80.
+      ports = [ "8080:80" ];
+      autoStart = true;
+    };
+  };
+
+  # Игра смотрит в локальную сеть: порт нужен открыть руками — у
+  # oci-containers своего `openFirewall`, как у jellyfin, нет.
+  networking.firewall.allowedTCPPorts = [ 8080 ];
+
 
   # ── Kingston SSD для VM образов ────────────────────────────
   # KINGSTON SA400S37480G, 447 GiB, btrfs

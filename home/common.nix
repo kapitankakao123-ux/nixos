@@ -13,7 +13,6 @@
   home.homeDirectory = "/home/gadjet";
   home.stateVersion = "26.05";   # так же не меняется после первой сборки
   programs.home-manager.enable = true;
-  arion.nixosModules.arion = true;
   # ── DankMaterialShell ───────────────────────────────────────
   programs.dank-material-shell = {
     enable = true;
