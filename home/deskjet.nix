@@ -39,7 +39,8 @@
     # Прокси-клиент. На Arch стояли hiddify и nekobox. hiddify-app из nixpkgs
     # удалён как заброшенный, а nekoray переименован в throne — его и берём,
     # он закрывает оба сценария. Есть ещё: clash-verge-rev, v2rayn, sing-box.
-    throne
+    v2rayn
+    xray
 
     # ── Разработка ───────────────────────────────────────
     gh                   # github-cli
