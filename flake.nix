@@ -36,6 +36,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+        # VS Code Remote-SSH на стороне сервера. Сам VS Code при подключении
+    # скачивает свой vscode-server и распаковывает в ~/.vscode-server —
+    # обычные бинарники под Ubuntu, которые на NixOS не запускаются
+    # (нет /lib64/ld-linux, нет libstdc++ в ожидаемом месте). Модуль ставит
+    # службу, которая их патчит после каждой распаковки.
+    #
+    # Здесь НЕТ `inputs.nixpkgs.follows` — в отличие от соседей выше. У этого
+    # flake своего nixpkgs просто нет (только flake-parts), и попытка
+    # переопределить несуществующий вход даёт warning:
+    #   input 'vscode-server' has an override for a non-existent input 'nixpkgs'
+    # Правило простое: follows пишется под входы, которые у зависимости есть.
+    vscode-server.url = "github:nix-community/nixos-vscode-server";
+
     # raspberry-pi-nix УБРАН 2026-09-09. Брали его из-за двух утверждений,
     # которые оказались неверны для свежего nixpkgs: якобы нет U-Boot для Pi 5
     # и якобы sd-image-aarch64 не знает про Pi 5. И то и другое есть в unstable.
@@ -46,7 +59,7 @@
   # ─────────────────────────────────────────────────────────────
   # OUTPUTS — ЧТО этот flake собирает.
   # ─────────────────────────────────────────────────────────────
-  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, vscode-server, ... }@inputs:
     let
       # ── Хосты объявлены ОДИН раз ──────────────────────────────
       # Добавить машину = дописать сюда строку и создать hosts/<имя>/.

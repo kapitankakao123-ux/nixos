@@ -1,7 +1,7 @@
 # hosts/kitjet — кухонный сервер у телевизора, x86_64.
 # Здесь только ВЫБОР возможностей (какие modules включены) и то,
 # что верно исключительно для этой машины: железо, имя, загрузчик.
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, ... }:
 
 {
   imports = [
@@ -10,6 +10,8 @@
     ../../modules/desktop.nix
     ../../modules/storage.nix           # ZFS-пул tank + samba
     ../../modules/virtualisation.nix    # libvirt/KVM для VM образов
+
+    inputs.vscode-server.nixosModules.default
   ];
 
   networking.hostName = "kitjet";
@@ -23,6 +25,13 @@
   # ── Загрузка ─────────────────────────────────────────────────
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+   
+    # ── VS Code Remote-SSH ───────────────────────────────────
+  # Только на kitjet: с deskjet мы ходим на него по ssh и правим конфиги.
+  # Служба ждёт появления ~/.vscode-server и патчит распакованные туда
+  # бинарники под NixOS. Своих портов не открывает: VS Code уже внутри
+  # ssh-туннеля, поэтому в firewall ничего добавлять не нужно.
+  services.vscode-server.enable = true;  
 
   # boot.kernelPackages здесь НЕ задаётся: ядро выбирает
   # modules/storage.nix, привязывая его к версии ZFS.
